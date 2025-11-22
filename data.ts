@@ -364,7 +364,7 @@ export const questions: Question[] = [
       "A triage bot that prioritizes insurance claims based on injuries is an example of the Microsoft reliability and safety principle for responsible AI.",
       "An AI solution that is offered at different prices for different sales territories is an example of the Microsoft inclusiveness principle for responsible AI.",
     ],
-    correctAnswer: ["Yes", "Yes", "No"],
+    correctAnswer: ["Yes", "No", "No"],
     explanation:
       "1. Explaining outcomes = Transparency. 2. Critical systems (triage) require Reliability/Safety. 3. Pricing differences is not about Inclusiveness (which refers to accessibility for people with disabilities/diverse backgrounds).",
   },

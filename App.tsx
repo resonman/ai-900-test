@@ -14,6 +14,7 @@ import {
   BookX,
   Check,
   GripVertical,
+  RotateCcw,
 } from "lucide-react";
 
 // --- Helper Components ---
@@ -107,12 +108,22 @@ export default function App() {
 
   const [wrongQuestionIds, setWrongQuestionIds] = useState<number[]>([]);
   const [showResults, setShowResults] = useState(false);
+  const [savedProgress, setSavedProgress] = useState<any>(null);
 
-  // Load wrong questions
+  // Load wrong questions & saved progress
   useEffect(() => {
-    const saved = localStorage.getItem("ai900_wrong_ids");
-    if (saved) {
-      setWrongQuestionIds(JSON.parse(saved));
+    const savedWrong = localStorage.getItem("ai900_wrong_ids");
+    if (savedWrong) {
+      setWrongQuestionIds(JSON.parse(savedWrong));
+    }
+
+    const savedProg = localStorage.getItem("ai900_practice_progress");
+    if (savedProg) {
+      try {
+        setSavedProgress(JSON.parse(savedProg));
+      } catch (e) {
+        console.error("Failed to parse progress", e);
+      }
     }
   }, []);
 
@@ -120,14 +131,44 @@ export default function App() {
     localStorage.setItem("ai900_wrong_ids", JSON.stringify(wrongQuestionIds));
   }, [wrongQuestionIds]);
 
+  // Save progress effect
+  useEffect(() => {
+    if (mode === "practice" && activeQuestions.length > 0) {
+      const progress = {
+        currentIndex,
+        userAnswers,
+        checkedQuestions,
+      };
+      localStorage.setItem("ai900_practice_progress", JSON.stringify(progress));
+      setSavedProgress(progress);
+    }
+  }, [mode, currentIndex, userAnswers, checkedQuestions, activeQuestions]);
+
   // Reset drag source when changing questions to prevent sticky selection
   useEffect(() => {
     setDragSource(null);
   }, [currentIndex]);
 
-  const handleStartPractice = () => {
+  const handleStartPractice = (resume = false) => {
     setActiveQuestions([...questions]);
-    resetQuiz("practice");
+
+    if (resume && savedProgress) {
+      // Resume logic
+      setMode("practice");
+      // Ensure index is within bounds in case data changed
+      const safeIndex =
+        savedProgress.currentIndex < questions.length
+          ? savedProgress.currentIndex
+          : 0;
+      setCurrentIndex(safeIndex);
+      setUserAnswers(savedProgress.userAnswers || {});
+      setCheckedQuestions(savedProgress.checkedQuestions || {});
+    } else {
+      // Start new
+      localStorage.removeItem("ai900_practice_progress");
+      setSavedProgress(null);
+      resetQuiz("practice");
+    }
   };
 
   const handleStartTest = () => {
@@ -463,7 +504,6 @@ export default function App() {
       }));
     };
 
-    // Use dropdownText if available, otherwise fallback to text
     const textToProcess = q.dropdownText || q.text;
     const parts = textToProcess?.split(/(\{\d+\})/) || [];
 
@@ -652,24 +692,49 @@ export default function App() {
           </div>
 
           <div className="space-y-4">
-            <Card className="p-1 hover:shadow-md transition-shadow cursor-pointer group">
-              <button
-                onClick={handleStartPractice}
-                className="w-full p-5 text-left flex items-center gap-4"
+            <Card className="p-0 hover:shadow-md transition-shadow cursor-pointer group overflow-hidden">
+              <div
+                className="p-5 flex items-center gap-4"
+                onClick={() => handleStartPractice(!!savedProgress)}
               >
                 <div className="h-12 w-12 bg-emerald-100 rounded-lg flex items-center justify-center shrink-0 group-hover:bg-emerald-200 transition-colors">
                   <BookOpen className="h-6 w-6 text-emerald-700" />
                 </div>
-                <div>
+                <div className="flex-1 text-left">
                   <h3 className="font-semibold text-slate-900">
-                    Sequential Practice
+                    {savedProgress
+                      ? `Continue Practice`
+                      : "Sequential Practice"}
                   </h3>
                   <p className="text-sm text-slate-500 mt-1">
-                    Go through {questions.length} questions in order.
+                    {savedProgress
+                      ? `Resume at question ${
+                          savedProgress.currentIndex + 1
+                        } of ${questions.length}`
+                      : `Go through ${questions.length} questions in order.`}
                   </p>
                 </div>
                 <ChevronRight className="ml-auto text-slate-400" />
-              </button>
+              </div>
+              {savedProgress && (
+                <div className="bg-slate-50 px-5 py-2 border-t border-slate-100 flex justify-end">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (
+                        confirm(
+                          "Restarting will lose your current progress. Continue?"
+                        )
+                      ) {
+                        handleStartPractice(false);
+                      }
+                    }}
+                    className="text-xs text-rose-600 hover:text-rose-700 font-medium flex items-center gap-1 px-2 py-1 rounded hover:bg-rose-50 transition-colors"
+                  >
+                    <RotateCcw className="w-3 h-3" /> Restart Practice
+                  </button>
+                </div>
+              )}
             </Card>
 
             <Card className="p-1 hover:shadow-md transition-shadow cursor-pointer group">
@@ -897,7 +962,6 @@ export default function App() {
 
           {renderTableData(currentQ)}
 
-          {/* Updated condition: Show header if not dropdown, OR if it is dropdown but has separate dropdownText */}
           {(currentQ.type !== "dropdown" || !!currentQ.dropdownText) && (
             <h2 className="text-xl md:text-2xl font-medium text-slate-800 leading-relaxed mb-8">
               {currentQ.text}
