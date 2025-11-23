@@ -740,7 +740,11 @@ export default function App() {
       setDragSource(sourceIdx === dragSource ? null : sourceIdx);
     };
 
-    const placedSources = Object.values(currentAns);
+    // Track usage count for each source item
+    const sourceUsageCount: Record<string, number> = {};
+    Object.values(currentAns).forEach((idxStr) => {
+      sourceUsageCount[idxStr] = (sourceUsageCount[idxStr] || 0) + 1;
+    });
 
     return (
       <div className="grid md:grid-cols-2 gap-8">
@@ -749,29 +753,47 @@ export default function App() {
             Source Items
           </h4>
           {q.matchLeft?.map((item, idx) => {
-            const isPlaced = placedSources.includes(idx.toString());
-            const isSelected = dragSource === idx.toString();
+            const idxStr = idx.toString();
+            const usageCount = sourceUsageCount[idxStr] || 0;
+            const isSelected = dragSource === idxStr;
 
             return (
               <button
                 key={idx}
-                onClick={() => handleSourceClick(idx.toString())}
-                disabled={isFeedbackMode || isPlaced}
-                className={`w-full text-left p-3 rounded-lg border-2 transition-all flex items-center gap-3
-                                ${
-                                  isPlaced
-                                    ? "opacity-40 bg-slate-100 border-dashed cursor-not-allowed"
-                                    : "bg-white hover:border-blue-400"
-                                }
+                onClick={() => handleSourceClick(idxStr)}
+                disabled={isFeedbackMode}
+                className={`w-full text-left p-3 rounded-lg border-2 transition-all flex items-center justify-between gap-3
                                 ${
                                   isSelected
                                     ? "border-blue-600 bg-blue-50 ring-2 ring-blue-200"
-                                    : "border-slate-200"
+                                    : usageCount > 0
+                                    ? "border-blue-200 bg-blue-50/50 hover:border-blue-400"
+                                    : "bg-white border-slate-200 hover:border-blue-400"
                                 }
                             `}
               >
-                <GripVertical className="w-4 h-4 text-slate-400" />
-                {item}
+                <div className="flex items-center gap-3">
+                  <GripVertical
+                    className={`w-4 h-4 ${
+                      isSelected ? "text-blue-600" : "text-slate-400"
+                    }`}
+                  />
+                  <span
+                    className={`text-sm md:text-base ${
+                      isSelected
+                        ? "text-blue-900 font-medium"
+                        : "text-slate-700"
+                    }`}
+                  >
+                    {item}
+                  </span>
+                </div>
+
+                {usageCount > 0 && (
+                  <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full">
+                    x{usageCount}
+                  </span>
+                )}
               </button>
             );
           })}
@@ -794,7 +816,7 @@ export default function App() {
             if (sourceText) style = "border-blue-200 bg-white border-solid";
 
             // Highlight drop target when dragging
-            if (dragSource && !sourceText && !isFeedbackMode) {
+            if (dragSource && !isFeedbackMode) {
               style = "border-blue-400 bg-blue-50 border-dashed";
             }
 
@@ -868,13 +890,13 @@ export default function App() {
       {/* Global Error Modal */}
       {loginError && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-in zoom-in-95 duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="p-6">
               <div className="flex items-start gap-4">
                 <div className="h-10 w-10 bg-rose-100 rounded-full flex items-center justify-center shrink-0">
                   <AlertCircle className="h-5 w-5 text-rose-600" />
                 </div>
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <h3 className="text-lg font-bold text-slate-900">
                     Sign In Issue
                   </h3>
@@ -887,10 +909,15 @@ export default function App() {
                       <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
                         Copy this domain
                       </label>
-                      <div className="mt-1 flex items-center gap-2">
-                        <code className="flex-1 bg-slate-100 border border-slate-200 p-2 rounded text-xs font-mono text-slate-800 break-all select-all">
-                          {getSafeDomain()}
-                        </code>
+                      <div className="mt-1 relative">
+                        <div className="bg-slate-100 border border-slate-200 rounded-lg max-h-32 overflow-y-auto p-3">
+                          <code className="text-xs font-mono text-slate-800 break-all select-all whitespace-pre-wrap block">
+                            {getSafeDomain()}
+                          </code>
+                        </div>
+                        <div className="mt-2 text-xs text-slate-500">
+                          Make sure to copy the exact domain shown above.
+                        </div>
                       </div>
                     </div>
                   )}
