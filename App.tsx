@@ -2,7 +2,13 @@ import React, { useState, useEffect } from "react";
 import { questions } from "./data";
 import { Question, AppMode } from "./types";
 import { auth, googleProvider, db } from "./firebase";
-import firebase from "firebase/app";
+import {
+  onAuthStateChanged,
+  signInWithPopup,
+  signOut,
+  User,
+} from "firebase/auth";
+import { ref, get, set } from "firebase/database";
 import {
   BookOpen,
   BrainCircuit,
@@ -20,7 +26,7 @@ import {
   User as UserIcon,
   Loader2,
   ChevronRight,
-  ArrowLeft
+  ArrowLeft,
 } from "lucide-react";
 
 // --- Helper Components ---
@@ -115,9 +121,9 @@ export default function App() {
   const [wrongQuestionIds, setWrongQuestionIds] = useState<number[]>([]);
   const [showResults, setShowResults] = useState(false);
   const [savedProgress, setSavedProgress] = useState<any>(null);
-  
+
   // Firebase State
-  const [user, setUser] = useState<firebase.User | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [dataLoadedFromCloud, setDataLoadedFromCloud] = useState(false);
 
@@ -125,13 +131,13 @@ export default function App() {
 
   // 1. Listen for Auth Changes
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
         // User just logged in, fetch data from cloud
         fetchUserData(currentUser.uid);
       } else {
-        // User logged out, maybe clear sensitive state or just keep local? 
+        // User logged out, maybe clear sensitive state or just keep local?
         // Let's keep local state but mark cloud as not loaded
         setDataLoadedFromCloud(false);
       }
@@ -143,19 +149,27 @@ export default function App() {
   const fetchUserData = async (uid: string) => {
     setIsSyncing(true);
     try {
-      const snapshot = await db.ref(`users/${uid}`).get();
+      const userRef = ref(db, `users/${uid}`);
+      const snapshot = await get(userRef);
+
       if (snapshot.exists()) {
         const data = snapshot.val();
-        
-        // Merge Logic: We prioritize Cloud data, but if we had local data before login, 
+
+        // Merge Logic: We prioritize Cloud data, but if we had local data before login,
         // a smarter merge might be needed. For now, Cloud overwrites Local to ensure consistency.
         if (data.wrongQuestionIds) {
           setWrongQuestionIds(data.wrongQuestionIds);
-          localStorage.setItem("ai900_wrong_ids", JSON.stringify(data.wrongQuestionIds));
+          localStorage.setItem(
+            "ai900_wrong_ids",
+            JSON.stringify(data.wrongQuestionIds)
+          );
         }
         if (data.progress) {
           setSavedProgress(data.progress);
-          localStorage.setItem("ai900_practice_progress", JSON.stringify(data.progress));
+          localStorage.setItem(
+            "ai900_practice_progress",
+            JSON.stringify(data.progress)
+          );
         }
       }
       setDataLoadedFromCloud(true);
@@ -173,10 +187,11 @@ export default function App() {
       const saveData = async () => {
         setIsSyncing(true);
         try {
-          await db.ref(`users/${user.uid}`).set({
+          const userRef = ref(db, `users/${user.uid}`);
+          await set(userRef, {
             wrongQuestionIds,
             progress: savedProgress,
-            lastUpdated: new Date().toISOString()
+            lastUpdated: new Date().toISOString(),
           });
         } catch (error) {
           console.error("Error saving data:", error);
@@ -194,7 +209,7 @@ export default function App() {
   // Handle Login
   const handleGoogleLogin = async () => {
     try {
-      await auth.signInWithPopup(googleProvider);
+      await signInWithPopup(auth, googleProvider);
     } catch (error) {
       console.error("Login failed:", error);
       alert("Login failed. Please try again.");
@@ -204,13 +219,12 @@ export default function App() {
   // Handle Logout
   const handleLogout = async () => {
     try {
-      await auth.signOut();
+      await signOut(auth);
       setMode("menu");
     } catch (error) {
       console.error("Logout failed:", error);
     }
   };
-
 
   // Load wrong questions & saved progress from LOCAL storage on init
   useEffect(() => {
@@ -340,7 +354,7 @@ export default function App() {
     if (question.type === "drag-drop") {
       const userObj = answer as Record<string, string>; // rightIndex -> leftIndex
       const correctObj = question.correctAnswer as Record<string, string>;
-      
+
       // Ensure all targets in correctObj match the user's selection
       return Object.keys(correctObj).every(
         (key) => userObj[key] === correctObj[key]
@@ -655,33 +669,33 @@ export default function App() {
 
   const renderDragDrop = (q: Question, isFeedbackMode: boolean) => {
     const currentAns: Record<string, string> = userAnswers[q.id] || {};
-    
+
     const handleTargetClick = (targetIdx: number) => {
       if (isFeedbackMode) return;
-      
+
       // Feature: Allow unselecting/changing
       if (dragSource) {
-         // Place new item
-         setUserAnswers((prev) => {
-            const existingAnswers = prev[q.id] || {};
-            return {
+        // Place new item
+        setUserAnswers((prev) => {
+          const existingAnswers = prev[q.id] || {};
+          return {
             ...prev,
             [q.id]: { ...existingAnswers, [targetIdx.toString()]: dragSource },
-            };
+          };
         });
         setDragSource(null);
       } else {
         // Clear existing item if clicked
         const existingVal = currentAns[targetIdx.toString()];
         if (existingVal) {
-             setUserAnswers((prev) => {
-                const existingAnswers = { ...(prev[q.id] || {}) };
-                delete existingAnswers[targetIdx.toString()];
-                return {
-                    ...prev,
-                    [q.id]: existingAnswers
-                }
-             });
+          setUserAnswers((prev) => {
+            const existingAnswers = { ...(prev[q.id] || {}) };
+            delete existingAnswers[targetIdx.toString()];
+            return {
+              ...prev,
+              [q.id]: existingAnswers,
+            };
+          });
         }
       }
     };
@@ -743,10 +757,10 @@ export default function App() {
 
             let style = "border-slate-200 bg-slate-50 border-dashed";
             if (sourceText) style = "border-blue-200 bg-white border-solid";
-            
+
             // Highlight drop target when dragging
             if (dragSource && !sourceText && !isFeedbackMode) {
-                style = "border-blue-400 bg-blue-50 border-dashed";
+              style = "border-blue-400 bg-blue-50 border-dashed";
             }
 
             if (isFeedbackMode) {
@@ -766,14 +780,16 @@ export default function App() {
                   <div className="font-medium text-blue-900 bg-blue-100 px-2 py-1 rounded inline-block self-start pr-8 relative">
                     {sourceText}
                     {!isFeedbackMode && (
-                        <div className="absolute right-1 top-1/2 -translate-y-1/2 text-blue-400 hover:text-blue-600">
-                            <X className="w-3 h-3" />
-                        </div>
+                      <div className="absolute right-1 top-1/2 -translate-y-1/2 text-blue-400 hover:text-blue-600">
+                        <X className="w-3 h-3" />
+                      </div>
                     )}
                   </div>
                 ) : (
                   <span className="text-xs text-slate-400 italic">
-                    {dragSource ? "Click to drop here" : "Select source & click here"}
+                    {dragSource
+                      ? "Click to drop here"
+                      : "Select source & click here"}
                   </span>
                 )}
 
@@ -809,41 +825,51 @@ export default function App() {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50 relative">
         <div className="absolute top-4 right-4 flex items-center gap-3">
-            {user ? (
-                <div className="flex items-center gap-3 bg-white p-2 pr-4 rounded-full border border-slate-200 shadow-sm">
-                    {user.photoURL ? (
-                        <img src={user.photoURL} alt="User" className="w-8 h-8 rounded-full" />
-                    ) : (
-                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                            <UserIcon className="w-4 h-4 text-blue-600" />
-                        </div>
-                    )}
-                    <div className="text-xs text-left">
-                        <div className="font-semibold text-slate-700">{user.displayName || "User"}</div>
-                        <div className="text-slate-400 flex items-center gap-1">
-                          {isSyncing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Cloud className="w-3 h-3" />}
-                          {isSyncing ? "Syncing..." : "Synced"}
-                        </div>
-                    </div>
-                    <button 
-                        onClick={handleLogout}
-                        className="ml-2 text-slate-400 hover:text-rose-600 transition-colors"
-                        title="Sign Out"
-                    >
-                        <LogOut className="w-4 h-4" />
-                    </button>
+          {user ? (
+            <div className="flex items-center gap-3 bg-white p-2 pr-4 rounded-full border border-slate-200 shadow-sm">
+              {user.photoURL ? (
+                <img
+                  src={user.photoURL}
+                  alt="User"
+                  className="w-8 h-8 rounded-full"
+                />
+              ) : (
+                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                  <UserIcon className="w-4 h-4 text-blue-600" />
                 </div>
-            ) : (
-                <button 
-                    onClick={handleGoogleLogin}
-                    className="flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-blue-600 bg-white px-4 py-2 rounded-lg border border-slate-200 hover:border-blue-300 transition-all shadow-sm group"
-                >
-                    <div className="w-4 h-4 rounded-full border border-current flex items-center justify-center">
-                        <UserIcon className="w-2.5 h-2.5" />
-                    </div>
-                    Sign in to Sync
-                </button>
-            )}
+              )}
+              <div className="text-xs text-left">
+                <div className="font-semibold text-slate-700">
+                  {user.displayName || "User"}
+                </div>
+                <div className="text-slate-400 flex items-center gap-1">
+                  {isSyncing ? (
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                  ) : (
+                    <Cloud className="w-3 h-3" />
+                  )}
+                  {isSyncing ? "Syncing..." : "Synced"}
+                </div>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="ml-2 text-slate-400 hover:text-rose-600 transition-colors"
+                title="Sign Out"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={handleGoogleLogin}
+              className="flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-blue-600 bg-white px-4 py-2 rounded-lg border border-slate-200 hover:border-blue-300 transition-all shadow-sm group"
+            >
+              <div className="w-4 h-4 rounded-full border border-current flex items-center justify-center">
+                <UserIcon className="w-2.5 h-2.5" />
+              </div>
+              Sign in to Sync
+            </button>
+          )}
         </div>
 
         <div className="max-w-md w-full space-y-8">
