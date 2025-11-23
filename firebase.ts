@@ -1,4 +1,5 @@
-import * as firebaseApp from "firebase/app";
+// @ts-ignore
+import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getDatabase } from "firebase/database";
 
@@ -7,6 +8,9 @@ import { getDatabase } from "firebase/database";
 const firebaseConfig = {
   apiKey: "AIzaSyA44DPfsAK5RuUFsFBYTtvS7b1jwQ-JZJs",
   authDomain: "ai-900-test.firebaseapp.com",
+  // IMPORTANT: You must add your Realtime Database URL here.
+  // Go to Firebase Console -> Realtime Database -> Data tab.
+  // Copy the URL at the top (e.g., https://ai-900-test-default-rtdb.firebaseio.com)
   databaseURL: "https://ai-900-test-default-rtdb.firebaseio.com",
   projectId: "ai-900-test",
   storageBucket: "ai-900-test.firebasestorage.app",
@@ -16,7 +20,7 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-const app = firebaseApp.initializeApp(firebaseConfig);
+const app = initializeApp(firebaseConfig);
 
 // Initialize Services
 export const auth = getAuth(app);

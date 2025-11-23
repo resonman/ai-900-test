@@ -210,9 +210,10 @@ export default function App() {
   const handleGoogleLogin = async () => {
     try {
       await signInWithPopup(auth, googleProvider);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login failed:", error);
-      alert("Login failed. Please try again.");
+      // Show detailed error to help debugging
+      alert(`Login failed: ${error.message || "Unknown error"}`);
     }
   };
 
