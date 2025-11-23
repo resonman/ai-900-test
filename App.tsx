@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { questions } from "./data";
 import { Question, AppMode } from "./types";
+import { auth, googleProvider, db } from "./firebase";
+import firebase from "firebase/app";
 import {
   BookOpen,
   BrainCircuit,
   CheckCircle2,
-  XCircle,
-  ChevronRight,
-  ArrowLeft,
   AlertCircle,
   Trophy,
   Play,
@@ -16,9 +15,12 @@ import {
   GripVertical,
   RotateCcw,
   X,
-  Download,
-  Upload,
-  Cloud
+  Cloud,
+  LogOut,
+  User as UserIcon,
+  Loader2,
+  ChevronRight,
+  ArrowLeft
 } from "lucide-react";
 
 // --- Helper Components ---
@@ -114,11 +116,103 @@ export default function App() {
   const [showResults, setShowResults] = useState(false);
   const [savedProgress, setSavedProgress] = useState<any>(null);
   
-  // Cloud Sync State
-  const [showSyncModal, setShowSyncModal] = useState(false);
-  const [syncCode, setSyncCode] = useState("");
+  // Firebase State
+  const [user, setUser] = useState<firebase.User | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [dataLoadedFromCloud, setDataLoadedFromCloud] = useState(false);
 
-  // Load wrong questions & saved progress
+  // --- Firebase Auth & Sync Logic ---
+
+  // 1. Listen for Auth Changes
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((currentUser) => {
+      setUser(currentUser);
+      if (currentUser) {
+        // User just logged in, fetch data from cloud
+        fetchUserData(currentUser.uid);
+      } else {
+        // User logged out, maybe clear sensitive state or just keep local? 
+        // Let's keep local state but mark cloud as not loaded
+        setDataLoadedFromCloud(false);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // 2. Load Data from Cloud
+  const fetchUserData = async (uid: string) => {
+    setIsSyncing(true);
+    try {
+      const snapshot = await db.ref(`users/${uid}`).get();
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        
+        // Merge Logic: We prioritize Cloud data, but if we had local data before login, 
+        // a smarter merge might be needed. For now, Cloud overwrites Local to ensure consistency.
+        if (data.wrongQuestionIds) {
+          setWrongQuestionIds(data.wrongQuestionIds);
+          localStorage.setItem("ai900_wrong_ids", JSON.stringify(data.wrongQuestionIds));
+        }
+        if (data.progress) {
+          setSavedProgress(data.progress);
+          localStorage.setItem("ai900_practice_progress", JSON.stringify(data.progress));
+        }
+      }
+      setDataLoadedFromCloud(true);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  // 3. Save Data to Cloud (Auto-sync)
+  // Triggered whenever wrongQuestionIds or savedProgress changes
+  useEffect(() => {
+    if (user && dataLoadedFromCloud) {
+      const saveData = async () => {
+        setIsSyncing(true);
+        try {
+          await db.ref(`users/${user.uid}`).set({
+            wrongQuestionIds,
+            progress: savedProgress,
+            lastUpdated: new Date().toISOString()
+          });
+        } catch (error) {
+          console.error("Error saving data:", error);
+        } finally {
+          setIsSyncing(false);
+        }
+      };
+
+      // Simple debounce
+      const timeoutId = setTimeout(saveData, 1000);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [wrongQuestionIds, savedProgress, user, dataLoadedFromCloud]);
+
+  // Handle Login
+  const handleGoogleLogin = async () => {
+    try {
+      await auth.signInWithPopup(googleProvider);
+    } catch (error) {
+      console.error("Login failed:", error);
+      alert("Login failed. Please try again.");
+    }
+  };
+
+  // Handle Logout
+  const handleLogout = async () => {
+    try {
+      await auth.signOut();
+      setMode("menu");
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  };
+
+
+  // Load wrong questions & saved progress from LOCAL storage on init
   useEffect(() => {
     const savedWrong = localStorage.getItem("ai900_wrong_ids");
     if (savedWrong) {
@@ -139,7 +233,7 @@ export default function App() {
     localStorage.setItem("ai900_wrong_ids", JSON.stringify(wrongQuestionIds));
   }, [wrongQuestionIds]);
 
-  // Save progress effect
+  // Save progress locally
   useEffect(() => {
     if (mode === "practice" && activeQuestions.length > 0) {
       const progress = {
@@ -205,40 +299,6 @@ export default function App() {
 
   const handleRemoveFromWrongBook = (id: number) => {
     setWrongQuestionIds((prev) => prev.filter((qid) => qid !== id));
-  };
-
-  // --- Sync Logic ---
-  const generateSyncCode = () => {
-    const data = {
-      wrongQuestionIds,
-      progress: savedProgress
-    };
-    const str = JSON.stringify(data);
-    // Simple Base64 encoding to make it look like a "code"
-    return btoa(str);
-  };
-
-  const applySyncCode = () => {
-    try {
-      const jsonStr = atob(syncCode);
-      const data = JSON.parse(jsonStr);
-      
-      if (data.wrongQuestionIds) {
-        setWrongQuestionIds(data.wrongQuestionIds);
-        localStorage.setItem("ai900_wrong_ids", JSON.stringify(data.wrongQuestionIds));
-      }
-      
-      if (data.progress) {
-        setSavedProgress(data.progress);
-        localStorage.setItem("ai900_practice_progress", JSON.stringify(data.progress));
-      }
-      
-      alert("Success! Progress loaded. You can now resume practice or review your notebook.");
-      setShowSyncModal(false);
-      setSyncCode("");
-    } catch (e) {
-      alert("Invalid code. Please check and try again.");
-    }
   };
 
   // --- Answer Checking Logic ---
@@ -748,75 +808,43 @@ export default function App() {
   if (mode === "menu") {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50 relative">
-        <div className="absolute top-4 right-4">
-            <button 
-                onClick={() => setShowSyncModal(true)}
-                className="flex items-center gap-2 text-sm text-slate-500 hover:text-blue-600 bg-white px-3 py-2 rounded-lg border border-slate-200 hover:border-blue-300 transition-all shadow-sm"
-            >
-                <Cloud className="w-4 h-4" /> Cloud Sync / Backup
-            </button>
-        </div>
-
-        {/* Sync Modal */}
-        {showSyncModal && (
-            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                <div className="bg-white rounded-xl shadow-xl max-w-lg w-full p-6 space-y-4">
-                    <div className="flex justify-between items-center border-b pb-4">
-                        <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                            <Cloud className="w-5 h-5 text-blue-600" /> Sync Progress
-                        </h3>
-                        <button onClick={() => setShowSyncModal(false)} className="text-slate-400 hover:text-slate-600">
-                            <X className="w-5 h-5" />
-                        </button>
-                    </div>
-                    
-                    <div className="space-y-4">
-                        <div className="bg-blue-50 p-4 rounded-lg text-sm text-blue-800">
-                            <p className="font-semibold mb-1">How this works:</p>
-                            To save your progress to another device, copy the "Sync Code" below and paste it into the other device.
+        <div className="absolute top-4 right-4 flex items-center gap-3">
+            {user ? (
+                <div className="flex items-center gap-3 bg-white p-2 pr-4 rounded-full border border-slate-200 shadow-sm">
+                    {user.photoURL ? (
+                        <img src={user.photoURL} alt="User" className="w-8 h-8 rounded-full" />
+                    ) : (
+                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                            <UserIcon className="w-4 h-4 text-blue-600" />
                         </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Your Sync Code (Copy this)</label>
-                            <div className="flex gap-2">
-                                <input 
-                                    readOnly 
-                                    className="flex-1 p-2 border rounded bg-slate-50 text-xs font-mono text-slate-600 truncate"
-                                    value={generateSyncCode()}
-                                />
-                                <Button 
-                                    onClick={() => {
-                                        navigator.clipboard.writeText(generateSyncCode());
-                                        alert("Code copied to clipboard!");
-                                    }}
-                                    variant="secondary"
-                                    className="shrink-0"
-                                >
-                                    Copy
-                                </Button>
-                            </div>
-                        </div>
-
-                        <div className="border-t pt-4">
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Load Progress (Paste code here)</label>
-                            <textarea 
-                                className="w-full p-2 border rounded text-xs font-mono h-24"
-                                placeholder="Paste your sync code here..."
-                                value={syncCode}
-                                onChange={(e) => setSyncCode(e.target.value)}
-                            />
-                            <Button 
-                                onClick={applySyncCode} 
-                                className="w-full mt-2"
-                                disabled={!syncCode}
-                            >
-                                <Upload className="w-4 h-4" /> Load Progress
-                            </Button>
+                    )}
+                    <div className="text-xs text-left">
+                        <div className="font-semibold text-slate-700">{user.displayName || "User"}</div>
+                        <div className="text-slate-400 flex items-center gap-1">
+                          {isSyncing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Cloud className="w-3 h-3" />}
+                          {isSyncing ? "Syncing..." : "Synced"}
                         </div>
                     </div>
+                    <button 
+                        onClick={handleLogout}
+                        className="ml-2 text-slate-400 hover:text-rose-600 transition-colors"
+                        title="Sign Out"
+                    >
+                        <LogOut className="w-4 h-4" />
+                    </button>
                 </div>
-            </div>
-        )}
+            ) : (
+                <button 
+                    onClick={handleGoogleLogin}
+                    className="flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-blue-600 bg-white px-4 py-2 rounded-lg border border-slate-200 hover:border-blue-300 transition-all shadow-sm group"
+                >
+                    <div className="w-4 h-4 rounded-full border border-current flex items-center justify-center">
+                        <UserIcon className="w-2.5 h-2.5" />
+                    </div>
+                    Sign in to Sync
+                </button>
+            )}
+        </div>
 
         <div className="max-w-md w-full space-y-8">
           <div className="text-center">
