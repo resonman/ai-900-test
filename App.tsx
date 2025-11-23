@@ -15,6 +15,10 @@ import {
   Check,
   GripVertical,
   RotateCcw,
+  X,
+  Download,
+  Upload,
+  Cloud
 } from "lucide-react";
 
 // --- Helper Components ---
@@ -109,6 +113,10 @@ export default function App() {
   const [wrongQuestionIds, setWrongQuestionIds] = useState<number[]>([]);
   const [showResults, setShowResults] = useState(false);
   const [savedProgress, setSavedProgress] = useState<any>(null);
+  
+  // Cloud Sync State
+  const [showSyncModal, setShowSyncModal] = useState(false);
+  const [syncCode, setSyncCode] = useState("");
 
   // Load wrong questions & saved progress
   useEffect(() => {
@@ -199,6 +207,40 @@ export default function App() {
     setWrongQuestionIds((prev) => prev.filter((qid) => qid !== id));
   };
 
+  // --- Sync Logic ---
+  const generateSyncCode = () => {
+    const data = {
+      wrongQuestionIds,
+      progress: savedProgress
+    };
+    const str = JSON.stringify(data);
+    // Simple Base64 encoding to make it look like a "code"
+    return btoa(str);
+  };
+
+  const applySyncCode = () => {
+    try {
+      const jsonStr = atob(syncCode);
+      const data = JSON.parse(jsonStr);
+      
+      if (data.wrongQuestionIds) {
+        setWrongQuestionIds(data.wrongQuestionIds);
+        localStorage.setItem("ai900_wrong_ids", JSON.stringify(data.wrongQuestionIds));
+      }
+      
+      if (data.progress) {
+        setSavedProgress(data.progress);
+        localStorage.setItem("ai900_practice_progress", JSON.stringify(data.progress));
+      }
+      
+      alert("Success! Progress loaded. You can now resume practice or review your notebook.");
+      setShowSyncModal(false);
+      setSyncCode("");
+    } catch (e) {
+      alert("Invalid code. Please check and try again.");
+    }
+  };
+
   // --- Answer Checking Logic ---
 
   const checkAnswer = (question: Question, answer: any): boolean => {
@@ -238,7 +280,8 @@ export default function App() {
     if (question.type === "drag-drop") {
       const userObj = answer as Record<string, string>; // rightIndex -> leftIndex
       const correctObj = question.correctAnswer as Record<string, string>;
-      // Ensure all targets have correct sources
+      
+      // Ensure all targets in correctObj match the user's selection
       return Object.keys(correctObj).every(
         (key) => userObj[key] === correctObj[key]
       );
@@ -552,23 +595,40 @@ export default function App() {
 
   const renderDragDrop = (q: Question, isFeedbackMode: boolean) => {
     const currentAns: Record<string, string> = userAnswers[q.id] || {};
-    // Note: dragSource is now lifted to App component state to avoid Hook Violation
-
+    
     const handleTargetClick = (targetIdx: number) => {
-      if (isFeedbackMode || !dragSource) return;
-      setUserAnswers((prev) => {
-        const existingAnswers = prev[q.id] || {};
-        return {
-          ...prev,
-          [q.id]: { ...existingAnswers, [targetIdx.toString()]: dragSource },
-        };
-      });
-      setDragSource(null);
+      if (isFeedbackMode) return;
+      
+      // Feature: Allow unselecting/changing
+      if (dragSource) {
+         // Place new item
+         setUserAnswers((prev) => {
+            const existingAnswers = prev[q.id] || {};
+            return {
+            ...prev,
+            [q.id]: { ...existingAnswers, [targetIdx.toString()]: dragSource },
+            };
+        });
+        setDragSource(null);
+      } else {
+        // Clear existing item if clicked
+        const existingVal = currentAns[targetIdx.toString()];
+        if (existingVal) {
+             setUserAnswers((prev) => {
+                const existingAnswers = { ...(prev[q.id] || {}) };
+                delete existingAnswers[targetIdx.toString()];
+                return {
+                    ...prev,
+                    [q.id]: existingAnswers
+                }
+             });
+        }
+      }
     };
 
     const handleSourceClick = (sourceIdx: string) => {
       if (isFeedbackMode) return;
-      setDragSource(sourceIdx);
+      setDragSource(sourceIdx === dragSource ? null : sourceIdx);
     };
 
     const placedSources = Object.values(currentAns);
@@ -591,7 +651,7 @@ export default function App() {
                 className={`w-full text-left p-3 rounded-lg border-2 transition-all flex items-center gap-3
                                 ${
                                   isPlaced
-                                    ? "opacity-40 bg-slate-100 border-dashed"
+                                    ? "opacity-40 bg-slate-100 border-dashed cursor-not-allowed"
                                     : "bg-white hover:border-blue-400"
                                 }
                                 ${
@@ -623,6 +683,11 @@ export default function App() {
 
             let style = "border-slate-200 bg-slate-50 border-dashed";
             if (sourceText) style = "border-blue-200 bg-white border-solid";
+            
+            // Highlight drop target when dragging
+            if (dragSource && !sourceText && !isFeedbackMode) {
+                style = "border-blue-400 bg-blue-50 border-dashed";
+            }
 
             if (isFeedbackMode) {
               if (sourceIdx === correctSourceIdx)
@@ -634,16 +699,21 @@ export default function App() {
               <div
                 key={idx}
                 onClick={() => handleTargetClick(idx)}
-                className={`p-4 rounded-lg border-2 min-h-[80px] flex flex-col justify-center cursor-pointer transition-all ${style}`}
+                className={`p-4 rounded-lg border-2 min-h-[80px] flex flex-col justify-center cursor-pointer transition-all relative group ${style}`}
               >
                 <p className="text-sm text-slate-500 mb-1">{item}</p>
                 {sourceText ? (
-                  <div className="font-medium text-blue-900 bg-blue-100 px-2 py-1 rounded inline-block self-start">
+                  <div className="font-medium text-blue-900 bg-blue-100 px-2 py-1 rounded inline-block self-start pr-8 relative">
                     {sourceText}
+                    {!isFeedbackMode && (
+                        <div className="absolute right-1 top-1/2 -translate-y-1/2 text-blue-400 hover:text-blue-600">
+                            <X className="w-3 h-3" />
+                        </div>
+                    )}
                   </div>
                 ) : (
                   <span className="text-xs text-slate-400 italic">
-                    Select source & click here
+                    {dragSource ? "Click to drop here" : "Select source & click here"}
                   </span>
                 )}
 
@@ -677,7 +747,77 @@ export default function App() {
 
   if (mode === "menu") {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50">
+      <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50 relative">
+        <div className="absolute top-4 right-4">
+            <button 
+                onClick={() => setShowSyncModal(true)}
+                className="flex items-center gap-2 text-sm text-slate-500 hover:text-blue-600 bg-white px-3 py-2 rounded-lg border border-slate-200 hover:border-blue-300 transition-all shadow-sm"
+            >
+                <Cloud className="w-4 h-4" /> Cloud Sync / Backup
+            </button>
+        </div>
+
+        {/* Sync Modal */}
+        {showSyncModal && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-xl shadow-xl max-w-lg w-full p-6 space-y-4">
+                    <div className="flex justify-between items-center border-b pb-4">
+                        <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                            <Cloud className="w-5 h-5 text-blue-600" /> Sync Progress
+                        </h3>
+                        <button onClick={() => setShowSyncModal(false)} className="text-slate-400 hover:text-slate-600">
+                            <X className="w-5 h-5" />
+                        </button>
+                    </div>
+                    
+                    <div className="space-y-4">
+                        <div className="bg-blue-50 p-4 rounded-lg text-sm text-blue-800">
+                            <p className="font-semibold mb-1">How this works:</p>
+                            To save your progress to another device, copy the "Sync Code" below and paste it into the other device.
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Your Sync Code (Copy this)</label>
+                            <div className="flex gap-2">
+                                <input 
+                                    readOnly 
+                                    className="flex-1 p-2 border rounded bg-slate-50 text-xs font-mono text-slate-600 truncate"
+                                    value={generateSyncCode()}
+                                />
+                                <Button 
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(generateSyncCode());
+                                        alert("Code copied to clipboard!");
+                                    }}
+                                    variant="secondary"
+                                    className="shrink-0"
+                                >
+                                    Copy
+                                </Button>
+                            </div>
+                        </div>
+
+                        <div className="border-t pt-4">
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Load Progress (Paste code here)</label>
+                            <textarea 
+                                className="w-full p-2 border rounded text-xs font-mono h-24"
+                                placeholder="Paste your sync code here..."
+                                value={syncCode}
+                                onChange={(e) => setSyncCode(e.target.value)}
+                            />
+                            <Button 
+                                onClick={applySyncCode} 
+                                className="w-full mt-2"
+                                disabled={!syncCode}
+                            >
+                                <Upload className="w-4 h-4" /> Load Progress
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        )}
+
         <div className="max-w-md w-full space-y-8">
           <div className="text-center">
             <div className="mx-auto h-16 w-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">

@@ -385,11 +385,11 @@ export const questions: Question[] = [
       "Personal data must be visible only to approve",
       "Automated decision-making processes must be recorded so that approved users can identify why a decision was made",
     ],
-    // 0(Discriminate) -> Fairness, 1(Personal Data) -> Privacy, 2(Why decision made) -> Transparency
+    // 0(Discriminate) -> Fairness(0), 1(Personal Data) -> Privacy(1), 2(Why decision made) -> Transparency(3)
     correctAnswer: {
-      "0": "Fairness",
-      "1": "Privacy and security",
-      "2": "Transparency",
+      "0": "0",
+      "1": "1",
+      "2": "3",
     },
     explanation:
       "Fairness = no discrimination. Privacy = data protection. Transparency = explainability.",
@@ -408,11 +408,11 @@ export const questions: Question[] = [
       "model evaluation",
     ],
     matchRight: ["Step 1", "Step 2", "Step 3"],
-    // Sequence: Data Prep -> Train -> Evaluate
+    // Sequence: Data Prep(3) -> Train(2) -> Evaluate(4)
     correctAnswer: {
-      "0": "data preparation",
-      "1": "model training",
-      "2": "model evaluation",
+      "0": "3",
+      "1": "2",
+      "2": "4",
     },
     explanation:
       "Standard ML workflow: Prepare Data -> Train Model -> Evaluate Model -> Deploy.",
@@ -480,13 +480,11 @@ export const questions: Question[] = [
       "Determining whether a photo contains a person",
       "Determining whether a review is positive or negative",
     ],
-    // Based on ExamTopics Q25 comments & "Correct Answer" block which says Box1: Knowledge Mining
-    // BUT Q7 says Chatbot = Conversational AI. Here option "Conversational AI" is missing.
-    // The OCR Correct Answer says: Box 1: Knowledge Mining, Box 2: Computer Vision, Box 3: NLP
+    // Chatbot -> Knowledge Mining(2), Photo -> CV(1), Review -> NLP(3)
     correctAnswer: {
-      "0": "Knowledge mining",
-      "1": "Computer vision",
-      "2": "Natural language processing",
+      "0": "2",
+      "1": "1",
+      "2": "3",
     },
     explanation:
       "NOTE: This question often causes debate. If 'Conversational AI' is missing, 'Knowledge Mining' (extracting info to answer questions) or 'NLP' (understanding the question) are used. The provided answer key for Q25 specifies Knowledge Mining for the chatbot.",
@@ -509,13 +507,13 @@ export const questions: Question[] = [
       "Splitting a date into month, day, and year fields",
       "Picking temperature and pressure to train a weather model",
     ],
-    // 0(Confusion matrix) -> Model evaluation
-    // 1(Split date) -> Feature engineering
-    // 2(Picking columns) -> Feature selection
+    // 0(Confusion matrix) -> Model evaluation(3)
+    // 1(Split date) -> Feature engineering(0)
+    // 2(Picking columns) -> Feature selection(1)
     correctAnswer: {
-      "0": "Model evaluation",
-      "1": "Feature engineering",
-      "2": "Feature selection",
+      "0": "3",
+      "1": "0",
+      "2": "1",
     },
     explanation:
       "Evaluation metrics include confusion matrices. Engineering creates new features (month/day) from existing ones. Selection chooses the most relevant existing columns.",
@@ -1798,12 +1796,10 @@ export const questions: Question[] = [
       "Identify mentions of clients (Task 1)",
       "Determine if article is negative (Task 2)",
     ],
-    // Note: The exam drag drop is usually a flowchart.
-    // Step 1: Find clients -> Entity Recognition.
-    // Step 2: Assess tone -> Sentiment Analysis.
+    // 0(Entities) -> 0(Clients), 1(Sentiment) -> 2(Negative)
     correctAnswer: {
-      "0": "Entity recognition",
-      "1": "Sentiment analysis",
+      "0": "0",
+      "1": "2",
     },
     explanation:
       "Entity recognition finds the customer names. Sentiment analysis determines if the news is positive or negative.",
@@ -2605,11 +2601,11 @@ export const questions: Question[] = [
       "Evaluates text along a positive-negative scale",
       "Converts text to a different language",
     ],
-    // 0 -> Entity, 1 -> Sentiment, 2 -> Translation
+    // 0 -> Entity(0), 1 -> Sentiment(3), 2 -> Translation(5)
     correctAnswer: {
-      "0": "Entity recognition",
-      "1": "Sentiment analysis",
-      "2": "Translation",
+      "0": "0",
+      "1": "3",
+      "2": "5",
     },
     explanation:
       "Standard NLP tasks: NER for entities, Sentiment for tone, Translation for languages.",
@@ -2646,10 +2642,10 @@ export const questions: Question[] = [
       "AI systems must consistently operate as intended",
       "AI systems must protect and secure personal and businesses information",
     ],
-    // 0 -> Reliability, 1 -> Privacy
+    // 0 -> Reliability(3), 1 -> Privacy(2)
     correctAnswer: {
-      "0": "Reliability and safety",
-      "1": "Privacy and security",
+      "0": "3",
+      "1": "2",
     },
     explanation:
       "Consistent operation = Reliability. Protecting information = Privacy & Security.",
@@ -2721,10 +2717,10 @@ export const questions: Question[] = [
       "Enables the use of natural language to query a knowledge base",
       "Enables the real-time transcription of speech-to-text",
     ],
-    // 0 -> Language Service, 1 -> Speech
+    // 0 -> Language Service(2), 1 -> Speech(3)
     correctAnswer: {
-      "0": "Language Service",
-      "1": "Speech",
+      "0": "2",
+      "1": "3",
     },
     explanation:
       "Language Service (QA) handles querying knowledge bases. Speech service handles transcription.",
@@ -2842,11 +2838,11 @@ export const questions: Question[] = [
       "Use a drag-and-drop interface used to train and deploy models",
       "Use a wizard to select configurations for a machine learning run",
     ],
-    // 0 -> Portal, 1 -> Designer, 2 -> Automated ML
+    // 0 -> Portal(1), 1 -> Designer(2), 2 -> Automated ML(0)
     correctAnswer: {
-      "0": "The Azure portal",
-      "1": "Machine Learning designer",
-      "2": "Automated machine learning (automated ML)",
+      "0": "1",
+      "1": "2",
+      "2": "0",
     },
     explanation:
       "Portal creates workspaces. Designer is drag-and-drop. AutoML uses a wizard/configuration.",
@@ -2885,12 +2881,12 @@ export const questions: Question[] = [
       "Identify an unusual credit card payment.",
       "Group animals based on multiple measurements.",
     ],
-    // 0 -> CV, 1 -> NLP, 2 -> Anomaly, 3 -> Clustering
+    // 0 -> CV(1), 1 -> NLP(3), 2 -> Anomaly(0), 3 -> Clustering(2)
     correctAnswer: {
-      "0": "Computer vision",
-      "1": "Natural language processing",
-      "2": "Anomaly detection",
-      "3": "Machine Learning (Clustering)",
+      "0": "1",
+      "1": "3",
+      "2": "0",
+      "3": "2",
     },
     explanation:
       "Handwriting = CV. Sentiment = NLP. Unusual payment = Anomaly. Grouping = Clustering.",
@@ -2950,12 +2946,12 @@ export const questions: Question[] = [
       "Ingest and prepare a dataset.",
     ],
     matchRight: ["Step 1", "Step 2", "Step 3", "Step 4"],
-    // Sequence: Ingest -> Split -> Train -> Evaluate
+    // Sequence: Ingest(4) -> Split(1) -> Train(0) -> Evaluate Val(3)
     correctAnswer: {
-      "0": "Ingest and prepare a dataset.",
-      "1": "Split the data randomly into training and validation data.",
-      "2": "Train the model.",
-      "3": "Evaluate the model against the validation dataset.",
+      "0": "4",
+      "1": "1",
+      "2": "0",
+      "3": "3",
     },
     explanation:
       "Standard workflow: Get Data -> Split Data -> Train -> Evaluate.",
@@ -3162,11 +3158,11 @@ export const questions: Question[] = [
       "Automatically import data from an invoice to a database.",
       "Identify people in an image.",
     ],
-    // 0 -> Custom Vision, 1 -> Form Recognizer, 2 -> Face
+    // 0 -> Custom Vision(0), 1 -> Form Recognizer(2), 2 -> Face(1)
     correctAnswer: {
-      "0": "Custom Vision",
-      "1": "Form Recognizer",
-      "2": "Face",
+      "0": "0",
+      "1": "2",
+      "2": "1",
     },
     explanation:
       "Custom Vision identifies objects (custom). Form Recognizer reads invoices. Face identifies people.",
@@ -3297,11 +3293,11 @@ export const questions: Question[] = [
       "Automatically import data from an invoice to a database.",
       "Identify people in an image.",
     ],
-    // 0 -> Custom Vision, 1 -> Form Recognizer, 2 -> Face
+    // 0 -> Custom Vision(0), 1 -> Form Recognizer(2), 2 -> Face(1)
     correctAnswer: {
-      "0": "Custom Vision",
-      "1": "Form Recognizer",
-      "2": "Face",
+      "0": "0",
+      "1": "2",
+      "2": "1",
     },
     explanation:
       "Custom Vision -> Objects. Form Recognizer -> Invoice. Face -> People.",
@@ -3416,11 +3412,11 @@ export const questions: Question[] = [
       "Identify the intent of a user's requests.",
       "Apply intent to entities and utterances.",
     ],
-    // 0 -> Speech, 1 -> Language, 2 -> Language
+    // 0 -> Speech(1), 1 -> Language(0), 2 -> Language(0)
     correctAnswer: {
-      "0": "Speech",
-      "1": "Language service",
-      "2": "Language service",
+      "0": "1",
+      "1": "0",
+      "2": "0",
     },
     explanation:
       "Spoken to text = Speech. Intent/Entities = Language Service (CLU).",
@@ -3433,7 +3429,7 @@ export const questions: Question[] = [
     text: "Determine if the following are examples of Conversational AI.",
     statements: [
       "A webchat bot can interact with users visiting a website.",
-      "Automatically generating captions for pre-recorded videos is an example of natural language processing (not conversational AI).",
+      "Automatically generating captions for pre-recorded videos is an example of conversational AI.",
       "A smart device in the home that responds to questions is an example of conversational AI.",
     ],
     correctAnswer: ["Yes", "No", "Yes"],
@@ -3550,11 +3546,11 @@ export const questions: Question[] = [
       "The decision-making process must be recorded so that staff can identify the reasoning",
       "The system must be accessible to customers who use screen readers",
     ],
-    // 0 -> Privacy, 1 -> Transparency, 2 -> Inclusiveness
+    // 0 -> Privacy(3), 1 -> Transparency(5), 2 -> Inclusiveness(2)
     correctAnswer: {
-      "0": "Privacy and security",
-      "1": "Transparency",
-      "2": "Inclusiveness",
+      "0": "3",
+      "1": "5",
+      "2": "2",
     },
     explanation:
       "Visible only to staff = Privacy. Recorded reasoning = Transparency. Screen readers/Accessibility = Inclusiveness.",
@@ -4089,11 +4085,11 @@ export const questions: Question[] = [
       "A supervised machine learning model used to predict categories",
       "An unsupervised machine learning model used to group similar entities based on features",
     ],
-    // 0(Numeric) -> Regression, 1(Categories) -> Classification, 2(Group similar) -> Clustering
+    // 0 -> Regression(2), 1 -> Classification(0), 2 -> Clustering(1)
     correctAnswer: {
-      "0": "Regression",
-      "1": "Classification",
-      "2": "Clustering",
+      "0": "2",
+      "1": "0",
+      "2": "1",
     },
     explanation:
       "Regression = Numbers. Classification = Categories. Clustering = Grouping (Unsupervised).",
@@ -4170,13 +4166,11 @@ export const questions: Question[] = [
       "Extract movie title names from movie poster images",
       "Locate vehicles in images",
     ],
-    // 0(Captions) -> Image classification (Note: Typically Image Analysis/Description, but exam logic maps it here or leaves it as best fit),
-    // 1(Extract title) -> OCR,
-    // 2(Locate) -> Object detection
+    // 0 -> Image classification(0), 1 -> OCR(2), 2 -> Object detection(1)
     correctAnswer: {
-      "0": "Image classification",
-      "1": "Optical character recognition (OCR)",
-      "2": "Object detection",
+      "0": "0",
+      "1": "2",
+      "2": "1",
     },
     explanation:
       "Extract title = OCR. Locate vehicles = Object Detection. Generate captions = Image Analysis/Classification (in exam context).",
