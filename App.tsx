@@ -3,30 +3,30 @@ import { questions } from "./data";
 import { Question, AppMode } from "./types";
 import { auth, googleProvider, db } from "./firebase";
 import {
-  onAuthStateChanged,
-  signInWithPopup,
-  signOut,
-  User,
+	onAuthStateChanged,
+	signInWithPopup,
+	signOut,
+	User,
 } from "firebase/auth";
 import { ref, get, set } from "firebase/database";
 import {
-  BookOpen,
-  BrainCircuit,
-  CheckCircle2,
-  AlertCircle,
-  Trophy,
-  Play,
-  BookX,
-  Check,
-  GripVertical,
-  RotateCcw,
-  X,
-  Cloud,
-  LogOut,
-  User as UserIcon,
-  Loader2,
-  ChevronRight,
-  ArrowLeft,
+	BookOpen,
+	BrainCircuit,
+	CheckCircle2,
+	AlertCircle,
+	Trophy,
+	Play,
+	BookX,
+	Check,
+	GripVertical,
+	RotateCcw,
+	X,
+	Cloud,
+	LogOut,
+	User as UserIcon,
+	Loader2,
+	ChevronRight,
+	ArrowLeft,
 } from "lucide-react";
 
 // --- Helper Functions for Test Randomization ---
@@ -136,74 +136,74 @@ const randomizeQuestionOptions = (q: Question): Question => {
 // --- Helper Components ---
 
 const Card = ({
-  children,
-  className = "",
+	children,
+	className = "",
 }: {
-  children?: React.ReactNode;
-  className?: string;
+	children?: React.ReactNode;
+	className?: string;
 }) => (
-  <div
-    className={`bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden ${className}`}
-  >
-    {children}
-  </div>
+	<div
+		className={`bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden ${className}`}
+	>
+		{children}
+	</div>
 );
 
 const Button = ({
-  onClick,
-  children,
-  variant = "primary",
-  className = "",
-  disabled = false,
+	onClick,
+	children,
+	variant = "primary",
+	className = "",
+	disabled = false,
 }: {
-  onClick: () => void;
-  children?: React.ReactNode;
-  variant?: "primary" | "secondary" | "outline" | "danger" | "success";
-  className?: string;
-  disabled?: boolean;
+	onClick: () => void;
+	children?: React.ReactNode;
+	variant?: "primary" | "secondary" | "outline" | "danger" | "success";
+	className?: string;
+	disabled?: boolean;
 }) => {
-  const baseStyles =
-    "px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 disabled:pointer-events-none";
-  const variants = {
-    primary: "bg-blue-600 text-white hover:bg-blue-700 shadow-sm hover:shadow",
-    secondary: "bg-slate-100 text-slate-700 hover:bg-slate-200",
-    outline:
-      "border-2 border-slate-200 text-slate-600 hover:border-blue-500 hover:text-blue-600",
-    danger: "bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200",
-    success: "bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm",
-  };
+	const baseStyles =
+		"px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 disabled:pointer-events-none";
+	const variants = {
+		primary: "bg-blue-600 text-white hover:bg-blue-700 shadow-sm hover:shadow",
+		secondary: "bg-slate-100 text-slate-700 hover:bg-slate-200",
+		outline:
+			"border-2 border-slate-200 text-slate-600 hover:border-blue-500 hover:text-blue-600",
+		danger: "bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200",
+		success: "bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm",
+	};
 
-  return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      className={`${baseStyles} ${variants[variant]} ${className}`}
-    >
-      {children}
-    </button>
-  );
+	return (
+		<button
+			onClick={onClick}
+			disabled={disabled}
+			className={`${baseStyles} ${variants[variant]} ${className}`}
+		>
+			{children}
+		</button>
+	);
 };
 
 const Badge = ({
-  children,
-  color = "blue",
+	children,
+	color = "blue",
 }: {
-  children?: React.ReactNode;
-  color?: "blue" | "green" | "red" | "orange";
+	children?: React.ReactNode;
+	color?: "blue" | "green" | "red" | "orange";
 }) => {
-  const colors = {
-    blue: "bg-blue-50 text-blue-700 border-blue-200",
-    green: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    red: "bg-rose-50 text-rose-700 border-rose-200",
-    orange: "bg-amber-50 text-amber-700 border-amber-200",
-  };
-  return (
-    <span
-      className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${colors[color]}`}
-    >
-      {children}
-    </span>
-  );
+	const colors = {
+		blue: "bg-blue-50 text-blue-700 border-blue-200",
+		green: "bg-emerald-50 text-emerald-700 border-emerald-200",
+		red: "bg-rose-50 text-rose-700 border-rose-200",
+		orange: "bg-amber-50 text-amber-700 border-amber-200",
+	};
+	return (
+		<span
+			className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${colors[color]}`}
+		>
+			{children}
+		</span>
+	);
 };
 
 // --- Main App Component ---
@@ -916,126 +916,171 @@ export default function App() {
                 disabled={isFeedbackMode}
                 className={`w-full text-left p-3 rounded-lg border-2 transition-all flex items-center justify-between gap-3
                                 ${
-                                  isSelected
-                                    ? "border-blue-600 bg-blue-50 ring-2 ring-blue-200"
-                                    : usageCount > 0
-                                    ? "border-blue-200 bg-blue-50/50 hover:border-blue-400"
-                                    : "bg-white border-slate-200 hover:border-blue-400"
-                                }
+																	isSelected
+																		? "border-blue-600 bg-blue-50 ring-2 ring-blue-200"
+																		: usageCount > 0
+																		? "border-blue-200 bg-blue-50/50 hover:border-blue-400"
+																		: "bg-white border-slate-200 hover:border-blue-400"
+																}
                             `}
-              >
-                <div className="flex items-center gap-3">
-                  <GripVertical
-                    className={`w-4 h-4 ${
-                      isSelected ? "text-blue-600" : "text-slate-400"
-                    }`}
-                  />
-                  <span
-                    className={`text-sm md:text-base ${
-                      isSelected
-                        ? "text-blue-900 font-medium"
-                        : "text-slate-700"
-                    }`}
-                  >
-                    {item}
-                  </span>
-                </div>
+							>
+								<div className="flex items-center gap-3">
+									<GripVertical
+										className={`w-4 h-4 ${
+											isSelected ? "text-blue-600" : "text-slate-400"
+										}`}
+									/>
+									<span
+										className={`text-sm md:text-base ${
+											isSelected
+												? "text-blue-900 font-medium"
+												: "text-slate-700"
+										}`}
+									>
+										{item}
+									</span>
+								</div>
 
-                {usageCount > 0 && (
-                  <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full">
-                    x{usageCount}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
+								{usageCount > 0 && (
+									<span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full">
+										x{usageCount}
+									</span>
+								)}
+							</button>
+						);
+					})}
+				</div>
 
-        <div className="space-y-3">
-          <h4 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">
-            Targets
-          </h4>
-          {q.matchRight?.map((item, idx) => {
-            const sourceIdx = currentAns[idx.toString()];
-            const sourceText = sourceIdx
-              ? q.matchLeft?.[parseInt(sourceIdx)]
-              : null;
-            const correctSourceIdx = (
-              q.correctAnswer as Record<string, string>
-            )[idx.toString()];
+				<div className="space-y-3">
+					<h4 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">
+						Targets
+					</h4>
+					{q.matchRight?.map((item, idx) => {
+						const sourceIdx = currentAns[idx.toString()];
+						const sourceText = sourceIdx
+							? q.matchLeft?.[parseInt(sourceIdx)]
+							: null;
+						const correctSourceIdx = (
+							q.correctAnswer as Record<string, string>
+						)[idx.toString()];
 
-            let style = "border-slate-200 bg-slate-50 border-dashed";
-            if (sourceText) style = "border-blue-200 bg-white border-solid";
+						let style = "border-slate-200 bg-slate-50 border-dashed";
+						if (sourceText) style = "border-blue-200 bg-white border-solid";
 
-            // Highlight drop target when dragging
-            if (dragSource && !isFeedbackMode) {
-              style = "border-blue-400 bg-blue-50 border-dashed";
-            }
+						// Highlight drop target when dragging
+						if (dragSource && !isFeedbackMode) {
+							style = "border-blue-400 bg-blue-50 border-dashed";
+						}
 
-            if (isFeedbackMode) {
-              if (sourceIdx === correctSourceIdx)
-                style = "border-emerald-500 bg-emerald-50";
-              else if (sourceIdx) style = "border-rose-500 bg-rose-50";
-            }
+						if (isFeedbackMode) {
+							if (sourceIdx === correctSourceIdx)
+								style = "border-emerald-500 bg-emerald-50";
+							else if (sourceIdx) style = "border-rose-500 bg-rose-50";
+						}
 
-            return (
-              <div
-                key={idx}
-                onClick={() => handleTargetClick(idx)}
-                className={`p-4 rounded-lg border-2 min-h-[80px] flex flex-col justify-center cursor-pointer transition-all relative group ${style}`}
-              >
-                <p className="text-sm text-slate-500 mb-1">{item}</p>
-                {sourceText ? (
-                  <div className="font-medium text-blue-900 bg-blue-100 px-2 py-1 rounded inline-block self-start pr-8 relative">
-                    {sourceText}
-                    {!isFeedbackMode && (
-                      <div className="absolute right-1 top-1/2 -translate-y-1/2 text-blue-400 hover:text-blue-600">
-                        <X className="w-3 h-3" />
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <span className="text-xs text-slate-400 italic">
-                    {dragSource
-                      ? "Click to drop here"
-                      : "Select source & click here"}
-                  </span>
-                )}
+						return (
+							<div
+								key={idx}
+								onClick={() => handleTargetClick(idx)}
+								className={`p-4 rounded-lg border-2 min-h-[80px] flex flex-col justify-center cursor-pointer transition-all relative group ${style}`}
+							>
+								<p className="text-sm text-slate-500 mb-1">{item}</p>
+								{sourceText ? (
+									<div className="font-medium text-blue-900 bg-blue-100 px-2 py-1 rounded inline-block self-start pr-8 relative">
+										{sourceText}
+										{!isFeedbackMode && (
+											<div className="absolute right-1 top-1/2 -translate-y-1/2 text-blue-400 hover:text-blue-600">
+												<X className="w-3 h-3" />
+											</div>
+										)}
+									</div>
+								) : (
+									<span className="text-xs text-slate-400 italic">
+										{dragSource
+											? "Click to drop here"
+											: "Select source & click here"}
+									</span>
+								)}
 
-                {isFeedbackMode && sourceIdx !== correctSourceIdx && (
-                  <div className="mt-2 text-xs text-emerald-600 font-medium">
-                    Correct: {q.matchLeft?.[parseInt(correctSourceIdx)]}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  };
+								{isFeedbackMode && sourceIdx !== correctSourceIdx && (
+									<div className="mt-2 text-xs text-emerald-600 font-medium">
+										Correct: {q.matchLeft?.[parseInt(correctSourceIdx)]}
+									</div>
+								)}
+							</div>
+						);
+					})}
+				</div>
+			</div>
+		);
+	};
 
-  const currentQ = activeQuestions[currentIndex];
+	// --- Mock Test Result Helper ---
 
-  const isPractice = mode === "practice";
-  const isWrongBook = mode === "wrong-book";
-  const isTest = mode === "test";
+	const formatAnswerDisplay = (q: Question, answer: any) => {
+		if (!answer)
+			return <span className="text-slate-400 italic">No Answer</span>;
 
-  // Calculate score and percentage for Test mode results
-  const score = calculateScore();
-  const percentage =
-    activeQuestions.length > 0
-      ? Math.round((score / activeQuestions.length) * 100)
-      : 0;
+		if (q.type === "single") {
+			return <span className="font-medium">{answer}</span>;
+		}
+		if (q.type === "multiple") {
+			return (
+				<span className="font-medium">{(answer as string[]).join(", ")}</span>
+			);
+		}
+		if (q.type === "yes-no") {
+			const arr = answer as string[];
+			return (
+				<ul className="list-disc pl-4 text-sm space-y-1">
+					{q.statements?.map((stmt, i) => (
+						<li key={i}>
+							<span className="text-slate-500">{stmt}:</span>{" "}
+							<strong>{arr[i] || "N/A"}</strong>
+						</li>
+					))}
+				</ul>
+			);
+		}
+		if (q.type === "dropdown") {
+			const obj = answer as Record<string, string>;
+			return (
+				<ul className="list-disc pl-4 text-sm space-y-1">
+					{Object.keys(obj).map((key) => (
+						<li key={key}>
+							<span className="text-slate-500">
+								Dropdown {parseInt(key) + 1}:
+							</span>{" "}
+							<strong>{obj[key]}</strong>
+						</li>
+					))}
+				</ul>
+			);
+		}
+		if (q.type === "drag-drop") {
+			const obj = answer as Record<string, string>;
+			return (
+				<ul className="list-disc pl-4 text-sm space-y-1">
+					{q.matchRight?.map((target, idx) => {
+						const sourceIdx = obj[idx.toString()];
+						const sourceText = sourceIdx
+							? q.matchLeft?.[parseInt(sourceIdx)]
+							: "Empty";
+						return (
+							<li key={idx}>
+								<span className="text-slate-500">{target}</span>{" "}
+								<ArrowLeft className="inline w-3 h-3" />{" "}
+								<strong>{sourceText}</strong>
+							</li>
+						);
+					})}
+				</ul>
+			);
+		}
+		return JSON.stringify(answer);
+	};
 
-  const isFeedbackMode =
-    (isPractice || isWrongBook) &&
-    (!!checkedQuestions[currentQ?.id] ||
-      (currentQ?.type === "single" && !!userAnswers[currentQ.id]));
-  const isCorrectAnswer =
-    currentQ &&
-    isFeedbackMode &&
-    checkAnswer(currentQ, userAnswers[currentQ.id]);
+	const currentQ = activeQuestions[currentIndex];
 
   // Filter incorrect questions for test review
   const incorrectQuestions =
@@ -1062,141 +1107,46 @@ export default function App() {
                     <p className="whitespace-pre-wrap">{loginError}</p>
                   </div>
 
-                  {loginError.includes("Authorized Domains") && (
-                    <div className="mt-4">
-                      <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                        Copy this domain
-                      </label>
-                      <div className="mt-1 relative">
-                        <div className="bg-slate-100 border border-slate-200 rounded-lg max-h-32 overflow-y-auto p-3">
-                          <code className="text-xs font-mono text-slate-800 break-all select-all whitespace-pre-wrap block">
-                            {getSafeDomain()}
-                          </code>
-                        </div>
-                        <div className="mt-2 text-xs text-slate-500">
-                          Make sure to copy the exact domain shown above.
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-            <div className="bg-slate-50 px-6 py-4 flex justify-end">
-              <Button onClick={() => setLoginError(null)}>Dismiss</Button>
-            </div>
-          </div>
-        </div>
-      )}
+	// Calculate score and percentage for Test mode results
+	const score = calculateScore();
+	const percentage =
+		activeQuestions.length > 0
+			? Math.round((score / activeQuestions.length) * 100)
+			: 0;
 
-      {mode === "menu" ? (
-        <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50 relative w-full">
-          <div className="absolute top-4 right-4 flex items-center gap-3">
-            {user ? (
-              <div className="flex items-center gap-3 bg-white p-2 pr-4 rounded-full border border-slate-200 shadow-sm">
-                {user.photoURL ? (
-                  <img
-                    src={user.photoURL}
-                    alt="User"
-                    className="w-8 h-8 rounded-full"
-                  />
-                ) : (
-                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                    <UserIcon className="w-4 h-4 text-blue-600" />
-                  </div>
-                )}
-                <div className="text-xs text-left">
-                  <div className="font-semibold text-slate-700">
-                    {user.displayName || "User"}
-                  </div>
-                  <div className="text-slate-400 flex items-center gap-1">
-                    {isSyncing ? (
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                    ) : (
-                      <Cloud className="w-3 h-3" />
-                    )}
-                    {isSyncing ? "Syncing..." : "Synced"}
-                  </div>
-                </div>
-                <button
-                  onClick={handleLogout}
-                  className="ml-2 text-slate-400 hover:text-rose-600 transition-colors"
-                  title="Sign Out"
-                >
-                  <LogOut className="w-4 h-4" />
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={handleGoogleLogin}
-                className="flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-blue-600 bg-white px-4 py-2 rounded-lg border border-slate-200 hover:border-blue-300 transition-all shadow-sm group"
-              >
-                <div className="w-4 h-4 rounded-full border border-current flex items-center justify-center">
-                  <UserIcon className="w-2.5 h-2.5" />
-                </div>
-                Sign in to Sync
-              </button>
-            )}
-          </div>
+	const isFeedbackMode =
+		(isPractice || isWrongBook) &&
+		(!!checkedQuestions[currentQ?.id] ||
+			(currentQ?.type === "single" && !!userAnswers[currentQ.id]));
+	const isCorrectAnswer =
+		currentQ &&
+		isFeedbackMode &&
+		checkAnswer(currentQ, userAnswers[currentQ.id]);
 
-          <div className="max-w-md w-full space-y-8">
-            <div className="text-center">
-              <div className="mx-auto h-16 w-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-                <BrainCircuit className="h-8 w-8 text-blue-600" />
-              </div>
-              <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
-                AI-900 Master
-              </h1>
-              <p className="mt-2 text-slate-600">
-                Ace your Microsoft AI Fundamentals Exam
-              </p>
-            </div>
+	// Filter incorrect questions for test review
+	const incorrectQuestions =
+		mode === "test" && showResults
+			? activeQuestions.filter((q) => !checkAnswer(q, userAnswers[q.id]))
+			: [];
 
-            <div className="space-y-4">
-              <Card className="p-0 hover:shadow-md transition-shadow cursor-pointer group overflow-hidden">
-                <div
-                  className="p-5 flex items-center gap-4"
-                  onClick={() => handleStartPractice(!!savedProgress)}
-                >
-                  <div className="h-12 w-12 bg-emerald-100 rounded-lg flex items-center justify-center shrink-0 group-hover:bg-emerald-200 transition-colors">
-                    <BookOpen className="h-6 w-6 text-emerald-700" />
-                  </div>
-                  <div className="flex-1 text-left">
-                    <h3 className="font-semibold text-slate-900">
-                      {savedProgress
-                        ? `Continue Practice`
-                        : "Sequential Practice"}
-                    </h3>
-                    <p className="text-sm text-slate-500 mt-1">
-                      {savedProgress
-                        ? `Resume at question ${
-                            savedProgress.currentIndex + 1
-                          } of ${questions.length}`
-                        : `Go through ${questions.length} questions in order.`}
-                    </p>
-                  </div>
-                  <ChevronRight className="ml-auto text-slate-400" />
-                </div>
-                {savedProgress && (
-                  <div className="bg-slate-50 px-5 py-2 border-t border-slate-100 flex justify-end">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (
-                          confirm(
-                            "Restarting will lose your current progress. Continue?"
-                          )
-                        ) {
-                          handleStartPractice(false);
-                        }
-                      }}
-                      className="text-xs text-rose-600 hover:text-rose-700 font-medium flex items-center gap-1 px-2 py-1 rounded hover:bg-rose-50 transition-colors"
-                    >
-                      <RotateCcw className="w-3 h-3" /> Restart Practice
-                    </button>
-                  </div>
-                )}
-              </Card>
+	return (
+		<div className="min-h-screen bg-slate-50 flex flex-col relative">
+			{/* Global Error Modal */}
+			{loginError && (
+				<div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+					<div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden animate-in zoom-in-95 duration-200">
+						<div className="p-6">
+							<div className="flex items-start gap-4">
+								<div className="h-10 w-10 bg-rose-100 rounded-full flex items-center justify-center shrink-0">
+									<AlertCircle className="h-5 w-5 text-rose-600" />
+								</div>
+								<div className="flex-1 min-w-0">
+									<h3 className="text-lg font-bold text-slate-900">
+										Sign In Issue
+									</h3>
+									<div className="mt-2 text-sm text-slate-600">
+										<p className="whitespace-pre-wrap">{loginError}</p>
+									</div>
 
               <Card className="p-1 hover:shadow-md transition-shadow cursor-pointer group">
                 <button
@@ -1216,49 +1166,55 @@ export default function App() {
                 </button>
               </Card>
 
-              <Card className="p-1 hover:shadow-md transition-shadow cursor-pointer group">
-                <button
-                  onClick={handleOpenWrongBook}
-                  className="w-full p-5 text-left flex items-center gap-4"
-                  disabled={wrongQuestionIds.length === 0}
-                >
-                  <div
-                    className={`h-12 w-12 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
-                      wrongQuestionIds.length === 0
-                        ? "bg-slate-100"
-                        : "bg-rose-100 group-hover:bg-rose-200"
-                    }`}
-                  >
-                    <BookX
-                      className={`h-6 w-6 ${
-                        wrongQuestionIds.length === 0
-                          ? "text-slate-400"
-                          : "text-rose-700"
-                      }`}
-                    />
-                  </div>
-                  <div
-                    className={
-                      wrongQuestionIds.length === 0 ? "opacity-50" : ""
-                    }
-                  >
-                    <h3 className="font-semibold text-slate-900">
-                      Wrong Answer Notebook
-                    </h3>
-                    <p className="text-sm text-slate-500 mt-1">
-                      {wrongQuestionIds.length === 0
-                        ? "No wrong answers recorded yet."
-                        : `Review ${wrongQuestionIds.length} questions you missed.`}
-                    </p>
-                  </div>
-                  {wrongQuestionIds.length > 0 && (
-                    <div className="ml-auto bg-rose-100 text-rose-700 text-xs font-bold px-2 py-1 rounded-full">
-                      {wrongQuestionIds.length}
-                    </div>
-                  )}
-                </button>
-              </Card>
-            </div>
+			{mode === "menu" ? (
+				<div className="min-h-screen flex items-center justify-center p-4 bg-slate-50 relative w-full">
+					<div className="absolute top-4 right-4 flex items-center gap-3">
+						{user ? (
+							<div className="flex items-center gap-3 bg-white p-2 pr-4 rounded-full border border-slate-200 shadow-sm">
+								{user.photoURL ? (
+									<img
+										src={user.photoURL}
+										alt="User"
+										className="w-8 h-8 rounded-full"
+									/>
+								) : (
+									<div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+										<UserIcon className="w-4 h-4 text-blue-600" />
+									</div>
+								)}
+								<div className="text-xs text-left">
+									<div className="font-semibold text-slate-700">
+										{user.displayName || "User"}
+									</div>
+									<div className="text-slate-400 flex items-center gap-1">
+										{isSyncing ? (
+											<Loader2 className="w-3 h-3 animate-spin" />
+										) : (
+											<Cloud className="w-3 h-3" />
+										)}
+										{isSyncing ? "Syncing..." : "Synced"}
+									</div>
+								</div>
+								<button
+									onClick={handleLogout}
+									className="ml-2 text-slate-400 hover:text-rose-600 transition-colors"
+									title="Sign Out"
+								>
+									<LogOut className="w-4 h-4" />
+								</button>
+							</div>
+						) : (
+							<button
+								onClick={handleGoogleLogin}
+								className="flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-blue-600 bg-white px-4 py-2 rounded-lg border border-slate-200 hover:border-blue-300 transition-all shadow-sm group"
+							>
+								<div className="w-4 h-4 rounded-full border border-current flex items-center justify-center">
+									<UserIcon className="w-2.5 h-2.5" />
+								</div>
+								Sign in to Sync
+							</button>
+						)}
+					</div>
 
             <div className="text-center text-xs text-slate-400 pt-8">
               Designed for Microsoft AI-900 Exam Preparation
@@ -1431,152 +1387,395 @@ export default function App() {
             </div>
           </header>
 
-          {/* Content */}
-          <main className="flex-1 max-w-4xl mx-auto w-full p-4 md:p-8 space-y-6">
-            {/* Question Card */}
-            <Card className="p-6 md:p-8">
-              <div className="flex justify-between items-start gap-4 mb-6">
-                <div className="flex gap-2">
-                  <Badge color="blue">{currentQ.topic}</Badge>
-                  {currentQ.type !== "single" && (
-                    <Badge color="orange">
-                      {currentQ.type.toUpperCase().replace("-", " ")}
-                    </Badge>
-                  )}
-                </div>
-                {isWrongBook && (
-                  <button
-                    onClick={() => handleRemoveFromWrongBook(currentQ.id)}
-                    className="text-xs text-rose-600 hover:text-rose-800 font-medium flex items-center gap-1 px-2 py-1 bg-rose-50 rounded"
-                  >
-                    <Check className="w-3 h-3" /> Mastered
-                  </button>
-                )}
-              </div>
+							<Card className="p-1 hover:shadow-md transition-shadow cursor-pointer group">
+								<button
+									onClick={handleStartTest}
+									className="w-full p-5 text-left flex items-center gap-4"
+								>
+									<div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center shrink-0 group-hover:bg-blue-200 transition-colors">
+										<Play className="h-6 w-6 text-blue-700" />
+									</div>
+									<div>
+										<h3 className="font-semibold text-slate-900">Mock Test</h3>
+										<p className="text-sm text-slate-500 mt-1">
+											Random 50 questions. No hints. Timed simulation feel.
+										</p>
+									</div>
+									<ChevronRight className="ml-auto text-slate-400" />
+								</button>
+							</Card>
 
-              {renderTableData(currentQ)}
+							<Card className="p-1 hover:shadow-md transition-shadow cursor-pointer group">
+								<button
+									onClick={handleOpenWrongBook}
+									className="w-full p-5 text-left flex items-center gap-4"
+									disabled={wrongQuestionIds.length === 0}
+								>
+									<div
+										className={`h-12 w-12 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+											wrongQuestionIds.length === 0
+												? "bg-slate-100"
+												: "bg-rose-100 group-hover:bg-rose-200"
+										}`}
+									>
+										<BookX
+											className={`h-6 w-6 ${
+												wrongQuestionIds.length === 0
+													? "text-slate-400"
+													: "text-rose-700"
+											}`}
+										/>
+									</div>
+									<div
+										className={
+											wrongQuestionIds.length === 0 ? "opacity-50" : ""
+										}
+									>
+										<h3 className="font-semibold text-slate-900">
+											Wrong Answer Notebook
+										</h3>
+										<p className="text-sm text-slate-500 mt-1">
+											{wrongQuestionIds.length === 0
+												? "No wrong answers recorded yet."
+												: `Review ${wrongQuestionIds.length} questions you missed.`}
+										</p>
+									</div>
+									{wrongQuestionIds.length > 0 && (
+										<div className="ml-auto bg-rose-100 text-rose-700 text-xs font-bold px-2 py-1 rounded-full">
+											{wrongQuestionIds.length}
+										</div>
+									)}
+								</button>
+							</Card>
+						</div>
 
-              {(currentQ.type !== "dropdown" || !!currentQ.dropdownText) && (
-                <h2 className="text-xl md:text-2xl font-medium text-slate-800 leading-relaxed mb-8">
-                  {currentQ.text}
-                </h2>
-              )}
+						<div className="text-center text-xs text-slate-400 pt-8">
+							Designed for Microsoft AI-900 Exam Preparation
+						</div>
+					</div>
+				</div>
+			) : mode === "test" && showResults ? (
+				<div className="min-h-screen bg-slate-50 p-4 md:p-8 w-full overflow-y-auto">
+					<div className="max-w-3xl w-full mx-auto space-y-6 pb-12">
+						<div className="flex justify-start">
+							<Button variant="secondary" onClick={handleBackToMenu}>
+								<ArrowLeft className="w-4 h-4" /> Back to Menu
+							</Button>
+						</div>
 
-              {currentQ.type === "single" &&
-                renderSingleChoice(currentQ, isFeedbackMode)}
-              {currentQ.type === "multiple" &&
-                renderMultipleChoice(currentQ, isFeedbackMode)}
-              {currentQ.type === "yes-no" &&
-                renderYesNo(currentQ, isFeedbackMode)}
-              {currentQ.type === "dropdown" &&
-                renderDropdown(currentQ, isFeedbackMode)}
-              {currentQ.type === "drag-drop" &&
-                renderDragDrop(currentQ, isFeedbackMode)}
+						<Card className="p-8 text-center space-y-6 bg-white border-t-8 border-t-blue-500">
+							<div className="mx-auto h-24 w-24 bg-blue-50 rounded-full flex items-center justify-center">
+								<Trophy className="h-12 w-12 text-blue-600" />
+							</div>
+							<div>
+								<h2 className="text-3xl font-bold text-slate-900">
+									Test Complete!
+								</h2>
+								<p className="text-slate-600 mt-2">Here is how you performed</p>
+							</div>
+							<div className="grid grid-cols-3 gap-4 border-t border-b border-slate-100 py-6">
+								<div className="text-center">
+									<div className="text-2xl font-bold text-slate-900">
+										{activeQuestions.length}
+									</div>
+									<div className="text-xs text-slate-500 uppercase tracking-wide font-semibold mt-1">
+										Total Questions
+									</div>
+								</div>
+								<div className="text-center">
+									<div className="text-2xl font-bold text-green-600">
+										{score}
+									</div>
+									<div className="text-xs text-slate-500 uppercase tracking-wide font-semibold mt-1">
+										Correct
+									</div>
+								</div>
+								<div className="text-center">
+									<div
+										className={`text-2xl font-bold ${
+											percentage >= 70 ? "text-blue-600" : "text-rose-600"
+										}`}
+									>
+										{percentage}%
+									</div>
+									<div className="text-xs text-slate-500 uppercase tracking-wide font-semibold mt-1">
+										Score
+									</div>
+								</div>
+							</div>
+							<div className="flex justify-center gap-4 flex-wrap">
+								<Button onClick={handleStartTest}>Retake Test</Button>
+								<Button
+									variant="secondary"
+									onClick={() => {
+										const newWrongIds: number[] = [];
+										activeQuestions.forEach((q) => {
+											if (!checkAnswer(q, userAnswers[q.id])) {
+												if (!wrongQuestionIds.includes(q.id))
+													newWrongIds.push(q.id);
+											}
+										});
+										if (newWrongIds.length > 0) {
+											setWrongQuestionIds((prev) => [...prev, ...newWrongIds]);
+											alert(
+												`Added ${newWrongIds.length} incorrect answers to your notebook.`
+											);
+										}
+										handleBackToMenu();
+									}}
+								>
+									Save Mistakes & Exit
+								</Button>
+							</div>
+						</Card>
 
-              {/* Check Button for complex types in Practice/WrongBook */}
-              {!isTest && currentQ.type !== "single" && !isFeedbackMode && (
-                <div className="mt-6 flex justify-end">
-                  <Button onClick={handleCheck}>Check Answer</Button>
-                </div>
-              )}
-            </Card>
+						{/* Detailed Wrong Answer Review */}
+						{incorrectQuestions.length > 0 && (
+							<div className="space-y-6 mt-8">
+								<h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+									<AlertCircle className="w-5 h-5 text-rose-500" />
+									Review Incorrect Answers ({incorrectQuestions.length})
+								</h3>
 
-            {/* Feedback Card */}
-            {isFeedbackMode && (
-              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <div
-                  className={`rounded-xl p-6 border-l-4 shadow-sm ${
-                    isCorrectAnswer
-                      ? "bg-emerald-50 border-emerald-500"
-                      : "bg-white border-rose-500"
-                  }`}
-                >
-                  <h3
-                    className={`font-bold text-lg flex items-center gap-2 mb-2 ${
-                      isCorrectAnswer ? "text-emerald-800" : "text-rose-800"
-                    }`}
-                  >
-                    {isCorrectAnswer ? (
-                      <>
-                        <CheckCircle2 className="w-6 h-6" /> Correct!
-                      </>
-                    ) : (
-                      <>
-                        <AlertCircle className="w-6 h-6" /> Incorrect
-                      </>
-                    )}
-                  </h3>
-                  <div className="text-slate-700 leading-relaxed">
-                    <span className="font-semibold block text-sm text-slate-500 uppercase mb-1">
-                      Explanation
-                    </span>
-                    {currentQ.explanation}
-                  </div>
-                </div>
-              </div>
-            )}
-          </main>
+								{incorrectQuestions.map((q, idx) => (
+									<Card key={q.id} className="p-6 border-l-4 border-rose-500">
+										<div className="flex justify-between items-start mb-4">
+											<Badge color="red">
+												Question {activeQuestions.indexOf(q) + 1}
+											</Badge>
+											<span className="text-xs text-slate-400">ID: {q.id}</span>
+										</div>
 
-          {/* Footer Controls */}
-          <footer className="bg-white border-t border-slate-200 p-4 sticky bottom-0 z-20">
-            <div className="max-w-4xl mx-auto flex justify-between items-center">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setCurrentIndex((prev) => Math.max(0, prev - 1));
-                }}
-                disabled={currentIndex === 0}
-              >
-                Previous
-              </Button>
+										<h4 className="text-lg font-medium text-slate-800 mb-6">
+											{q.text}
+										</h4>
+										{renderTableData(q)}
 
-              <div className="text-sm text-slate-400 hidden sm:block">
-                {isTest && (
-                  <span>
-                    Answered: {Object.keys(userAnswers).length}/
-                    {activeQuestions.length}
-                  </span>
-                )}
-              </div>
+										<div className="grid md:grid-cols-2 gap-4 mb-6">
+											<div className="bg-rose-50 border border-rose-100 rounded-lg p-4">
+												<div className="text-xs text-rose-600 uppercase font-bold tracking-wider mb-2 flex items-center gap-1">
+													<X className="w-3 h-3" /> Your Answer
+												</div>
+												<div className="text-rose-900">
+													{formatAnswerDisplay(q, userAnswers[q.id])}
+												</div>
+											</div>
+											<div className="bg-emerald-50 border border-emerald-100 rounded-lg p-4">
+												<div className="text-xs text-emerald-600 uppercase font-bold tracking-wider mb-2 flex items-center gap-1">
+													<Check className="w-3 h-3" /> Correct Answer
+												</div>
+												<div className="text-emerald-900">
+													{formatAnswerDisplay(q, q.correctAnswer)}
+												</div>
+											</div>
+										</div>
 
-              {currentIndex === activeQuestions.length - 1 ? (
-                isTest ? (
-                  <Button
-                    onClick={() => setShowResults(true)}
-                    variant="success"
-                  >
-                    Submit Test
-                  </Button>
-                ) : (
-                  <Button onClick={handleBackToMenu} variant="secondary">
-                    Finish
-                  </Button>
-                )
-              ) : (
-                <Button
-                  onClick={() =>
-                    setCurrentIndex((prev) =>
-                      Math.min(activeQuestions.length - 1, prev + 1)
-                    )
-                  }
-                >
-                  Next Question <ChevronRight className="w-4 h-4" />
-                </Button>
-              )}
-            </div>
-          </footer>
-        </>
-      )}
+										<div className="bg-slate-50 rounded-lg p-4 text-sm leading-relaxed text-slate-700">
+											<span className="font-bold block text-slate-900 mb-1">
+												Explanation:
+											</span>
+											{q.explanation}
+										</div>
+									</Card>
+								))}
+							</div>
+						)}
+					</div>
+				</div>
+			) : activeQuestions.length === 0 ? (
+				<div className="min-h-screen flex items-center justify-center bg-slate-50 w-full">
+					<div className="text-center">
+						<p className="text-slate-500 mb-4">No questions available.</p>
+						<Button onClick={handleBackToMenu}>Go Back</Button>
+					</div>
+				</div>
+			) : (
+				<>
+					{/* Header */}
+					<header className="bg-white border-b border-slate-200 sticky top-0 z-20">
+						<div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
+							<div className="flex items-center gap-4">
+								<button
+									onClick={handleBackToMenu}
+									className="p-2 hover:bg-slate-100 rounded-full text-slate-500 transition-colors"
+								>
+									<ArrowLeft className="w-5 h-5" />
+								</button>
+								<h1 className="font-semibold text-slate-900 truncate max-w-[150px] sm:max-w-none">
+									{isPractice && "Practice Mode"}
+									{isTest && "Mock Test"}
+									{isWrongBook && "Notebook"}
+								</h1>
+							</div>
+							<div className="flex items-center gap-3">
+								<div className="hidden sm:flex flex-col items-end">
+									<span className="text-xs text-slate-500 font-medium uppercase tracking-wider">
+										Progress
+									</span>
+									<span className="text-sm font-bold text-slate-700">
+										{currentIndex + 1} / {activeQuestions.length}
+									</span>
+								</div>
+								<div className="w-24 sm:w-32 h-2 bg-slate-100 rounded-full overflow-hidden">
+									<div
+										className="h-full bg-blue-500 transition-all duration-500"
+										style={{
+											width: `${
+												((currentIndex + 1) / activeQuestions.length) * 100
+											}%`,
+										}}
+									/>
+								</div>
+							</div>
+						</div>
+					</header>
 
-      {/* Render Test Result Mode Helper: Calculate score for test mode rendering above */}
-      {/* Note: The rendering logic above handles the modes. This block just ensures variables like score/percentage are available if needed, but they are calculated inside the render block. */}
-      {(() => {
-        // Helper to calculate score for the test result view which is rendered inside the ternary above
-        if (mode === "test" && showResults) {
-          // Score logic is duplicated visually in the JSX above, but the function calculateScore exists in scope.
-        }
-        return null;
-      })()}
-    </div>
-  );
+					{/* Content */}
+					<main className="flex-1 max-w-4xl mx-auto w-full p-4 md:p-8 space-y-6">
+						{/* Question Card */}
+						<Card className="p-6 md:p-8">
+							<div className="flex justify-between items-start gap-4 mb-6">
+								<div className="flex gap-2">
+									<Badge color="blue">{currentQ.topic}</Badge>
+									{currentQ.type !== "single" && (
+										<Badge color="orange">
+											{currentQ.type.toUpperCase().replace("-", " ")}
+										</Badge>
+									)}
+								</div>
+								{isWrongBook && (
+									<button
+										onClick={() => handleRemoveFromWrongBook(currentQ.id)}
+										className="text-xs text-rose-600 hover:text-rose-800 font-medium flex items-center gap-1 px-2 py-1 bg-rose-50 rounded"
+									>
+										<Check className="w-3 h-3" /> Mastered
+									</button>
+								)}
+							</div>
+
+							{renderTableData(currentQ)}
+
+							{(currentQ.type !== "dropdown" || !!currentQ.dropdownText) && (
+								<h2 className="text-xl md:text-2xl font-medium text-slate-800 leading-relaxed mb-8">
+									{currentQ.text}
+								</h2>
+							)}
+
+							{currentQ.type === "single" &&
+								renderSingleChoice(currentQ, isFeedbackMode)}
+							{currentQ.type === "multiple" &&
+								renderMultipleChoice(currentQ, isFeedbackMode)}
+							{currentQ.type === "yes-no" &&
+								renderYesNo(currentQ, isFeedbackMode)}
+							{currentQ.type === "dropdown" &&
+								renderDropdown(currentQ, isFeedbackMode)}
+							{currentQ.type === "drag-drop" &&
+								renderDragDrop(currentQ, isFeedbackMode)}
+
+							{/* Check Button for complex types in Practice/WrongBook */}
+							{!isTest && currentQ.type !== "single" && !isFeedbackMode && (
+								<div className="mt-6 flex justify-end">
+									<Button onClick={handleCheck}>Check Answer</Button>
+								</div>
+							)}
+						</Card>
+
+						{/* Feedback Card */}
+						{isFeedbackMode && (
+							<div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+								<div
+									className={`rounded-xl p-6 border-l-4 shadow-sm ${
+										isCorrectAnswer
+											? "bg-emerald-50 border-emerald-500"
+											: "bg-white border-rose-500"
+									}`}
+								>
+									<h3
+										className={`font-bold text-lg flex items-center gap-2 mb-2 ${
+											isCorrectAnswer ? "text-emerald-800" : "text-rose-800"
+										}`}
+									>
+										{isCorrectAnswer ? (
+											<>
+												<CheckCircle2 className="w-6 h-6" /> Correct!
+											</>
+										) : (
+											<>
+												<AlertCircle className="w-6 h-6" /> Incorrect
+											</>
+										)}
+									</h3>
+									<div className="text-slate-700 leading-relaxed">
+										<span className="font-semibold block text-sm text-slate-500 uppercase mb-1">
+											Explanation
+										</span>
+										{currentQ.explanation}
+									</div>
+								</div>
+							</div>
+						)}
+					</main>
+
+					{/* Footer Controls */}
+					<footer className="bg-white border-t border-slate-200 p-4 sticky bottom-0 z-20">
+						<div className="max-w-4xl mx-auto flex justify-between items-center">
+							<Button
+								variant="outline"
+								onClick={() => {
+									setCurrentIndex((prev) => Math.max(0, prev - 1));
+								}}
+								disabled={currentIndex === 0}
+							>
+								Previous
+							</Button>
+
+							<div className="text-sm text-slate-400 hidden sm:block">
+								{isTest && (
+									<span>
+										Answered: {Object.keys(userAnswers).length}/
+										{activeQuestions.length}
+									</span>
+								)}
+							</div>
+
+							{currentIndex === activeQuestions.length - 1 ? (
+								isTest ? (
+									<Button
+										onClick={() => setShowResults(true)}
+										variant="success"
+									>
+										Submit Test
+									</Button>
+								) : (
+									<Button onClick={handleBackToMenu} variant="secondary">
+										Finish
+									</Button>
+								)
+							) : (
+								<Button
+									onClick={() =>
+										setCurrentIndex((prev) =>
+											Math.min(activeQuestions.length - 1, prev + 1)
+										)
+									}
+								>
+									Next Question <ChevronRight className="w-4 h-4" />
+								</Button>
+							)}
+						</div>
+					</footer>
+				</>
+			)}
+
+			{/* Render Test Result Mode Helper: Calculate score for test mode rendering above */}
+			{/* Note: The rendering logic above handles the modes. This block just ensures variables like score/percentage are available if needed, but they are calculated inside the render block. */}
+			{(() => {
+				// Helper to calculate score for the test result view which is rendered inside the ternary above
+				if (mode === "test" && showResults) {
+					// Score logic is duplicated visually in the JSX above, but the function calculateScore exists in scope.
+				}
+				return null;
+			})()}
+		</div>
+	);
 }
