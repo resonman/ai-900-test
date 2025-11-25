@@ -29,6 +29,110 @@ import {
   ArrowLeft,
 } from "lucide-react";
 
+// --- Helper Functions for Test Randomization ---
+
+const shuffleArray = <T,>(array: T[]): T[] => {
+  const newArr = [...array];
+  for (let i = newArr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [newArr[i], newArr[j]] = [newArr[j], newArr[i]];
+  }
+  return newArr;
+};
+
+const deduplicateQuestions = (allQuestions: Question[]): Question[] => {
+  const uniqueMap = new Map<string, Question>();
+
+  allQuestions.forEach((q) => {
+    // Create a signature based on content to identify duplicates
+    const signature = JSON.stringify({
+      text: q.text.trim(),
+      type: q.type,
+      // Check options/statements to distinguish variants
+      options: q.options ? [...q.options].sort() : null,
+      statements: q.statements,
+    });
+
+    if (!uniqueMap.has(signature)) {
+      uniqueMap.set(signature, q);
+    }
+  });
+
+  return Array.from(uniqueMap.values());
+};
+
+const randomizeQuestionOptions = (q: Question): Question => {
+  // Deep copy to avoid mutating original data
+  const newQ = JSON.parse(JSON.stringify(q));
+
+  // Only randomize Single and Multiple choice
+  if (
+    (newQ.type !== "single" && newQ.type !== "multiple") ||
+    !newQ.options ||
+    newQ.options.length === 0
+  ) {
+    return newQ;
+  }
+
+  const prefixes = ["A", "B", "C", "D", "E", "F", "G", "H"];
+
+  // 1. Parse existing options to separate Letter from Content
+  const parsedOptions = newQ.options.map((opt: string, index: number) => {
+    // Matches "A. Content" or "A) Content"
+    const match = opt.match(/^([A-Z])[\.\)]\s+(.*)/);
+    if (match) {
+      return {
+        originalLetter: match[1],
+        content: match[2],
+        originalIndex: index,
+      };
+    }
+    // Fallback if format is non-standard
+    return {
+      originalLetter: prefixes[index],
+      content: opt.replace(/^[A-Z][\.\)]\s+/, ""),
+      originalIndex: index,
+    };
+  });
+
+  // 2. Shuffle the options
+  const shuffledOptions = shuffleArray(parsedOptions);
+
+  // 3. Reconstruct options with new prefixes
+  newQ.options = shuffledOptions.map((item: any, index: number) => {
+    return `${prefixes[index]}. ${item.content}`;
+  });
+
+  // 4. Remap correct answer(s) to new positions
+  if (newQ.type === "single") {
+    const target = parsedOptions.find(
+      (p: any) => p.originalLetter === q.correctAnswer
+    );
+    if (target) {
+      const newIndex = shuffledOptions.indexOf(target);
+      newQ.correctAnswer = prefixes[newIndex];
+    }
+  } else if (newQ.type === "multiple") {
+    const originalCorrect = q.correctAnswer as string[];
+    const newCorrect = originalCorrect
+      .map((letter) => {
+        const target = parsedOptions.find(
+          (p: any) => p.originalLetter === letter
+        );
+        if (target) {
+          const newIndex = shuffledOptions.indexOf(target);
+          return prefixes[newIndex];
+        }
+        return null;
+      })
+      .filter(Boolean)
+      .sort(); // Sort to keep ["A", "B"] format
+    newQ.correctAnswer = newCorrect;
+  }
+
+  return newQ;
+};
+
 // --- Helper Components ---
 
 const Card = ({
@@ -323,16 +427,56 @@ export default function App() {
   };
 
   const handleStartTest = () => {
-    const shuffled = [...questions].sort(() => 0.5 - Math.random());
-    setActiveQuestions(shuffled.slice(0, 50));
+    // 1. Deduplicate questions from source to ensure variety
+    const distinctQuestions = deduplicateQuestions(questions);
+
+    // 2. Shuffle the questions
+    const shuffledQs = shuffleArray(distinctQuestions);
+
+    // 3. Select 50 questions
+    const selectedQs = shuffledQs.slice(0, 50);
+
+    // 4. Randomize options for Single/Multiple choice questions within the test
+    const finalTestQs = selectedQs.map(randomizeQuestionOptions);
+
+    setActiveQuestions(finalTestQs);
     resetQuiz("test");
   };
 
   const handleOpenWrongBook = () => {
+    // Check if we have progress for the wrong book (optional feature: resume wrong book)
     const wrongQs = questions.filter((q) => wrongQuestionIds.includes(q.id));
     setActiveQuestions(wrongQs);
+
+    // Check if we have a saved index for notebook in local storage
+    const savedNotebookProgress = localStorage.getItem(
+      "ai900_notebook_progress"
+    );
+    let startIndex = 0;
+
+    if (savedNotebookProgress) {
+      try {
+        const parsed = JSON.parse(savedNotebookProgress);
+        // Verify if the current list of wrong questions still matches roughly or just clamp index
+        if (parsed.currentIndex < wrongQs.length) {
+          startIndex = parsed.currentIndex;
+        }
+      } catch (e) {}
+    }
+
     resetQuiz("wrong-book");
+    setCurrentIndex(startIndex);
   };
+
+  // Effect to save Notebook progress
+  useEffect(() => {
+    if (mode === "wrong-book" && activeQuestions.length > 0) {
+      localStorage.setItem(
+        "ai900_notebook_progress",
+        JSON.stringify({ currentIndex })
+      );
+    }
+  }, [mode, currentIndex, activeQuestions]);
 
   const resetQuiz = (newMode: AppMode) => {
     setCurrentIndex(0);
@@ -484,10 +628,18 @@ export default function App() {
               onClick={() => {
                 if (isFeedbackMode) return;
                 setUserAnswers((prev) => ({ ...prev, [q.id]: option }));
-                if (mode === "practice" && !checkedQuestions[q.id]) {
+                // Allow immediate feedback in Practice Mode OR Wrong Book Mode
+                if (
+                  (mode === "practice" || mode === "wrong-book") &&
+                  !checkedQuestions[q.id]
+                ) {
                   setTimeout(() => {
                     const isCorrect = letter === q.correctAnswer;
-                    if (!isCorrect && !wrongQuestionIds.includes(q.id)) {
+                    if (
+                      mode === "practice" &&
+                      !isCorrect &&
+                      !wrongQuestionIds.includes(q.id)
+                    ) {
                       setWrongQuestionIds((prev) => [...prev, q.id]);
                     }
                     setCheckedQuestions((prev) => ({ ...prev, [q.id]: true }));
@@ -885,6 +1037,12 @@ export default function App() {
     isFeedbackMode &&
     checkAnswer(currentQ, userAnswers[currentQ.id]);
 
+  // Filter incorrect questions for test review
+  const incorrectQuestions =
+    mode === "test" && showResults
+      ? activeQuestions.filter((q) => !checkAnswer(q, userAnswers[q.id]))
+      : [];
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col relative">
       {/* Global Error Modal */}
@@ -1051,7 +1209,7 @@ export default function App() {
                   <div>
                     <h3 className="font-semibold text-slate-900">Mock Test</h3>
                     <p className="text-sm text-slate-500 mt-1">
-                      Random 50 questions. No hints. Timed simulation feel.
+                      Random 50 questions with shuffled options. No duplicates.
                     </p>
                   </div>
                   <ChevronRight className="ml-auto text-slate-400" />
@@ -1108,13 +1266,15 @@ export default function App() {
           </div>
         </div>
       ) : mode === "test" && showResults ? (
-        <div className="min-h-screen bg-slate-50 p-4 md:p-8 flex items-center justify-center w-full">
-          <div className="max-w-3xl w-full space-y-6">
-            <Button variant="secondary" onClick={handleBackToMenu}>
-              <ArrowLeft className="w-4 h-4" /> Back to Menu
-            </Button>
+        <div className="min-h-screen bg-slate-50 p-4 md:p-8 w-full overflow-y-auto">
+          <div className="max-w-3xl w-full mx-auto space-y-6 pb-12">
+            <div className="flex justify-start">
+              <Button variant="secondary" onClick={handleBackToMenu}>
+                <ArrowLeft className="w-4 h-4" /> Back to Menu
+              </Button>
+            </div>
 
-            <Card className="p-8 text-center space-y-6">
+            <Card className="p-8 text-center space-y-6 bg-white border-t-8 border-t-blue-500">
               <div className="mx-auto h-24 w-24 bg-blue-50 rounded-full flex items-center justify-center">
                 <Trophy className="h-12 w-12 text-blue-600" />
               </div>
@@ -1179,6 +1339,48 @@ export default function App() {
                 </Button>
               </div>
             </Card>
+
+            {/* Detailed Wrong Answer Review */}
+            {incorrectQuestions.length > 0 && (
+              <div className="space-y-6 mt-8">
+                <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                  <AlertCircle className="w-5 h-5 text-rose-500" />
+                  Review Incorrect Answers ({incorrectQuestions.length})
+                </h3>
+
+                {incorrectQuestions.map((q, idx) => (
+                  <Card key={q.id} className="p-6 border-l-4 border-rose-500">
+                    <div className="flex justify-between items-start mb-4">
+                      <Badge color="red">
+                        Question {activeQuestions.indexOf(q) + 1}
+                      </Badge>
+                      <span className="text-xs text-slate-400">ID: {q.id}</span>
+                    </div>
+
+                    <h4 className="text-lg font-medium text-slate-800 mb-6">
+                      {q.text}
+                    </h4>
+                    {renderTableData(q)}
+
+                    {/* Render the actual question interactive component in feedback mode so users can see option text */}
+                    <div className="mb-6 pointer-events-none opacity-90">
+                      {q.type === "single" && renderSingleChoice(q, true)}
+                      {q.type === "multiple" && renderMultipleChoice(q, true)}
+                      {q.type === "yes-no" && renderYesNo(q, true)}
+                      {q.type === "dropdown" && renderDropdown(q, true)}
+                      {q.type === "drag-drop" && renderDragDrop(q, true)}
+                    </div>
+
+                    <div className="bg-slate-50 rounded-lg p-4 text-sm leading-relaxed text-slate-700">
+                      <span className="font-bold block text-slate-900 mb-1">
+                        Explanation:
+                      </span>
+                      {q.explanation}
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       ) : activeQuestions.length === 0 ? (
