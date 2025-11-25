@@ -3611,7 +3611,7 @@ export const questions: Question[] = [
 		id: 212,
 		topic: "AutoML",
 		type: "dropdown",
-		text: "You need to train an automated machine learning model to predict vehicle sale values. Which task should you select?",
+		text: "You need to train an automated machine learning model to predict vehicle sale values. Which task should you select? {0}",
 		dropdownOptions: {
 			"0": [
 				"Classification",
