@@ -329,10 +329,51 @@ export default function App() {
 	};
 
 	const handleOpenWrongBook = () => {
+		// Check if we have progress for the wrong book (optional feature: resume wrong book)
+		// For now, let's just implement resume logic similar to practice if needed,
+		// or just simpler 'start over' if cleared.
+		// But per user request earlier: "Continue Notebook"
+
+		// We reuse the 'savedProgress' variable but we need to distinguish modes?
+		// Actually, let's keep it simple: Wrong Book saves position in a separate key if needed,
+		// or we just rely on `wrongQuestionIds` being persistent and we start from index 0 or find first unchecked.
+		// The previous implementation was simple. Let's stick to the prompt's "Continue" feature.
+		// For simplicity in this codebase, I'll check if there is a 'last index' stored for notebook.
+
+		// Actually, the previous implementation I provided just reused the generic save mechanism or didn't fully implement persistence for Notebook INDEX.
+		// Let's just load the questions.
 		const wrongQs = questions.filter((q) => wrongQuestionIds.includes(q.id));
 		setActiveQuestions(wrongQs);
+
+		// Check if we have a saved index for notebook in local storage
+		const savedNotebookProgress = localStorage.getItem(
+			"ai900_notebook_progress"
+		);
+		let startIndex = 0;
+
+		if (savedNotebookProgress) {
+			try {
+				const parsed = JSON.parse(savedNotebookProgress);
+				// Verify if the current list of wrong questions still matches roughly or just clamp index
+				if (parsed.currentIndex < wrongQs.length) {
+					startIndex = parsed.currentIndex;
+				}
+			} catch (e) {}
+		}
+
 		resetQuiz("wrong-book");
+		setCurrentIndex(startIndex);
 	};
+
+	// Effect to save Notebook progress
+	useEffect(() => {
+		if (mode === "wrong-book" && activeQuestions.length > 0) {
+			localStorage.setItem(
+				"ai900_notebook_progress",
+				JSON.stringify({ currentIndex })
+			);
+		}
+	}, [mode, currentIndex, activeQuestions]);
 
 	const resetQuiz = (newMode: AppMode) => {
 		setCurrentIndex(0);
@@ -871,6 +912,71 @@ export default function App() {
 		);
 	};
 
+	// --- Mock Test Result Helper ---
+
+	const formatAnswerDisplay = (q: Question, answer: any) => {
+		if (!answer)
+			return <span className="text-slate-400 italic">No Answer</span>;
+
+		if (q.type === "single") {
+			return <span className="font-medium">{answer}</span>;
+		}
+		if (q.type === "multiple") {
+			return (
+				<span className="font-medium">{(answer as string[]).join(", ")}</span>
+			);
+		}
+		if (q.type === "yes-no") {
+			const arr = answer as string[];
+			return (
+				<ul className="list-disc pl-4 text-sm space-y-1">
+					{q.statements?.map((stmt, i) => (
+						<li key={i}>
+							<span className="text-slate-500">{stmt}:</span>{" "}
+							<strong>{arr[i] || "N/A"}</strong>
+						</li>
+					))}
+				</ul>
+			);
+		}
+		if (q.type === "dropdown") {
+			const obj = answer as Record<string, string>;
+			return (
+				<ul className="list-disc pl-4 text-sm space-y-1">
+					{Object.keys(obj).map((key) => (
+						<li key={key}>
+							<span className="text-slate-500">
+								Dropdown {parseInt(key) + 1}:
+							</span>{" "}
+							<strong>{obj[key]}</strong>
+						</li>
+					))}
+				</ul>
+			);
+		}
+		if (q.type === "drag-drop") {
+			const obj = answer as Record<string, string>;
+			return (
+				<ul className="list-disc pl-4 text-sm space-y-1">
+					{q.matchRight?.map((target, idx) => {
+						const sourceIdx = obj[idx.toString()];
+						const sourceText = sourceIdx
+							? q.matchLeft?.[parseInt(sourceIdx)]
+							: "Empty";
+						return (
+							<li key={idx}>
+								<span className="text-slate-500">{target}</span>{" "}
+								<ArrowLeft className="inline w-3 h-3" />{" "}
+								<strong>{sourceText}</strong>
+							</li>
+						);
+					})}
+				</ul>
+			);
+		}
+		return JSON.stringify(answer);
+	};
+
 	const currentQ = activeQuestions[currentIndex];
 
 	const isPractice = mode === "practice";
@@ -892,6 +998,12 @@ export default function App() {
 		currentQ &&
 		isFeedbackMode &&
 		checkAnswer(currentQ, userAnswers[currentQ.id]);
+
+	// Filter incorrect questions for test review
+	const incorrectQuestions =
+		mode === "test" && showResults
+			? activeQuestions.filter((q) => !checkAnswer(q, userAnswers[q.id]))
+			: [];
 
 	return (
 		<div className="min-h-screen bg-slate-50 flex flex-col relative">
@@ -1116,13 +1228,15 @@ export default function App() {
 					</div>
 				</div>
 			) : mode === "test" && showResults ? (
-				<div className="min-h-screen bg-slate-50 p-4 md:p-8 flex items-center justify-center w-full">
-					<div className="max-w-3xl w-full space-y-6">
-						<Button variant="secondary" onClick={handleBackToMenu}>
-							<ArrowLeft className="w-4 h-4" /> Back to Menu
-						</Button>
+				<div className="min-h-screen bg-slate-50 p-4 md:p-8 w-full overflow-y-auto">
+					<div className="max-w-3xl w-full mx-auto space-y-6 pb-12">
+						<div className="flex justify-start">
+							<Button variant="secondary" onClick={handleBackToMenu}>
+								<ArrowLeft className="w-4 h-4" /> Back to Menu
+							</Button>
+						</div>
 
-						<Card className="p-8 text-center space-y-6">
+						<Card className="p-8 text-center space-y-6 bg-white border-t-8 border-t-blue-500">
 							<div className="mx-auto h-24 w-24 bg-blue-50 rounded-full flex items-center justify-center">
 								<Trophy className="h-12 w-12 text-blue-600" />
 							</div>
@@ -1187,6 +1301,58 @@ export default function App() {
 								</Button>
 							</div>
 						</Card>
+
+						{/* Detailed Wrong Answer Review */}
+						{incorrectQuestions.length > 0 && (
+							<div className="space-y-6 mt-8">
+								<h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+									<AlertCircle className="w-5 h-5 text-rose-500" />
+									Review Incorrect Answers ({incorrectQuestions.length})
+								</h3>
+
+								{incorrectQuestions.map((q, idx) => (
+									<Card key={q.id} className="p-6 border-l-4 border-rose-500">
+										<div className="flex justify-between items-start mb-4">
+											<Badge color="red">
+												Question {activeQuestions.indexOf(q) + 1}
+											</Badge>
+											<span className="text-xs text-slate-400">ID: {q.id}</span>
+										</div>
+
+										<h4 className="text-lg font-medium text-slate-800 mb-6">
+											{q.text}
+										</h4>
+										{renderTableData(q)}
+
+										<div className="grid md:grid-cols-2 gap-4 mb-6">
+											<div className="bg-rose-50 border border-rose-100 rounded-lg p-4">
+												<div className="text-xs text-rose-600 uppercase font-bold tracking-wider mb-2 flex items-center gap-1">
+													<X className="w-3 h-3" /> Your Answer
+												</div>
+												<div className="text-rose-900">
+													{formatAnswerDisplay(q, userAnswers[q.id])}
+												</div>
+											</div>
+											<div className="bg-emerald-50 border border-emerald-100 rounded-lg p-4">
+												<div className="text-xs text-emerald-600 uppercase font-bold tracking-wider mb-2 flex items-center gap-1">
+													<Check className="w-3 h-3" /> Correct Answer
+												</div>
+												<div className="text-emerald-900">
+													{formatAnswerDisplay(q, q.correctAnswer)}
+												</div>
+											</div>
+										</div>
+
+										<div className="bg-slate-50 rounded-lg p-4 text-sm leading-relaxed text-slate-700">
+											<span className="font-bold block text-slate-900 mb-1">
+												Explanation:
+											</span>
+											{q.explanation}
+										</div>
+									</Card>
+								))}
+							</div>
+						)}
 					</div>
 				</div>
 			) : activeQuestions.length === 0 ? (
