@@ -65,69 +65,77 @@ const randomizeQuestionOptions = (q: Question): Question => {
   // Deep copy to avoid mutating original data
   const newQ = JSON.parse(JSON.stringify(q));
 
-  // Only randomize Single and Multiple choice
+  // 1. Randomize Single and Multiple Choice
   if (
-    (newQ.type !== "single" && newQ.type !== "multiple") ||
-    !newQ.options ||
-    newQ.options.length === 0
+    (newQ.type === "single" || newQ.type === "multiple") &&
+    newQ.options &&
+    newQ.options.length > 0
   ) {
-    return newQ;
-  }
+    const prefixes = ["A", "B", "C", "D", "E", "F", "G", "H"];
 
-  const prefixes = ["A", "B", "C", "D", "E", "F", "G", "H"];
-
-  // 1. Parse existing options to separate Letter from Content
-  const parsedOptions = newQ.options.map((opt: string, index: number) => {
-    // Matches "A. Content" or "A) Content"
-    const match = opt.match(/^([A-Z])[\.\)]\s+(.*)/);
-    if (match) {
+    // Parse existing options to separate Letter from Content
+    const parsedOptions = newQ.options.map((opt: string, index: number) => {
+      // Matches "A. Content" or "A) Content"
+      const match = opt.match(/^([A-Z])[\.\)]\s+(.*)/);
+      if (match) {
+        return {
+          originalLetter: match[1],
+          content: match[2],
+          originalIndex: index,
+        };
+      }
+      // Fallback if format is non-standard
       return {
-        originalLetter: match[1],
-        content: match[2],
+        originalLetter: prefixes[index],
+        content: opt.replace(/^[A-Z][\.\)]\s+/, ""),
         originalIndex: index,
       };
+    });
+
+    // Shuffle the options
+    const shuffledOptions = shuffleArray(parsedOptions);
+
+    // Reconstruct options with new prefixes
+    newQ.options = shuffledOptions.map((item: any, index: number) => {
+      return `${prefixes[index]}. ${item.content}`;
+    });
+
+    // Remap correct answer(s) to new positions
+    if (newQ.type === "single") {
+      const target = parsedOptions.find(
+        (p: any) => p.originalLetter === q.correctAnswer
+      );
+      if (target) {
+        const newIndex = shuffledOptions.indexOf(target);
+        newQ.correctAnswer = prefixes[newIndex];
+      }
+    } else if (newQ.type === "multiple") {
+      const originalCorrect = q.correctAnswer as string[];
+      const newCorrect = originalCorrect
+        .map((letter) => {
+          const target = parsedOptions.find(
+            (p: any) => p.originalLetter === letter
+          );
+          if (target) {
+            const newIndex = shuffledOptions.indexOf(target);
+            return prefixes[newIndex];
+          }
+          return null;
+        })
+        .filter(Boolean)
+        .sort(); // Sort to keep ["A", "B"] format
+      newQ.correctAnswer = newCorrect;
     }
-    // Fallback if format is non-standard
-    return {
-      originalLetter: prefixes[index],
-      content: opt.replace(/^[A-Z][\.\)]\s+/, ""),
-      originalIndex: index,
-    };
-  });
+  }
 
-  // 2. Shuffle the options
-  const shuffledOptions = shuffleArray(parsedOptions);
-
-  // 3. Reconstruct options with new prefixes
-  newQ.options = shuffledOptions.map((item: any, index: number) => {
-    return `${prefixes[index]}. ${item.content}`;
-  });
-
-  // 4. Remap correct answer(s) to new positions
-  if (newQ.type === "single") {
-    const target = parsedOptions.find(
-      (p: any) => p.originalLetter === q.correctAnswer
-    );
-    if (target) {
-      const newIndex = shuffledOptions.indexOf(target);
-      newQ.correctAnswer = prefixes[newIndex];
-    }
-  } else if (newQ.type === "multiple") {
-    const originalCorrect = q.correctAnswer as string[];
-    const newCorrect = originalCorrect
-      .map((letter) => {
-        const target = parsedOptions.find(
-          (p: any) => p.originalLetter === letter
-        );
-        if (target) {
-          const newIndex = shuffledOptions.indexOf(target);
-          return prefixes[newIndex];
-        }
-        return null;
-      })
-      .filter(Boolean)
-      .sort(); // Sort to keep ["A", "B"] format
-    newQ.correctAnswer = newCorrect;
+  // 2. Randomize Dropdown Options
+  // Dropdowns match by string value, so we can just shuffle the array without remapping answers
+  if (newQ.type === "dropdown" && newQ.dropdownOptions) {
+    Object.keys(newQ.dropdownOptions).forEach((key) => {
+      if (newQ.dropdownOptions[key]) {
+        newQ.dropdownOptions[key] = shuffleArray(newQ.dropdownOptions[key]);
+      }
+    });
   }
 
   return newQ;
@@ -436,7 +444,7 @@ export default function App() {
     // 3. Select 50 questions
     const selectedQs = shuffledQs.slice(0, 50);
 
-    // 4. Randomize options for Single/Multiple choice questions within the test
+    // 4. Randomize options for Single/Multiple/Dropdown choice questions within the test
     const finalTestQs = selectedQs.map(randomizeQuestionOptions);
 
     setActiveQuestions(finalTestQs);
